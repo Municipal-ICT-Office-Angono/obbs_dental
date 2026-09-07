@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dental_clinical_finding_list" model="ir.ui.view">
+        <field name="name">dental.clinical.finding.list</field>
+        <field name="model">dental.clinical.finding</field>
+        <field name="arch" type="xml">
+            <list string="Clinical Findings" multi_edit="1">
+                <field name="patient_id"/>
+                <field name="date"/>
+                <field name="dentist_id"/>
+                <field name="state" widget="badge"/>
+                <field name="gingivitis_periodontitis" widget="boolean_toggle"/>
+                <field name="periodontal_disease" widget="boolean_toggle"/>
+                <field name="teeth_with_caries"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dental_clinical_finding_form" model="ir.ui.view">
+        <field name="name">dental.clinical.finding.form</field>
+        <field name="model">dental.clinical.finding</field>
+        <field name="arch" type="xml">
+            <form string="Clinical Finding">
+                <header>
+                    <button name="action_confirm" type="object"
+                            string="Confirm" class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button name="action_back_draft" type="object"
+                            string="Reopen"
+                            invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Assessment">
+                            <field name="patient_id" invisible="context.get('default_patient_id')"/>
+                            <field name="date"/>
+                            <field name="dentist_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Clinical Findings">
+                            <group>
+                                <group string="A.1 Periodontal Disease">
+                                    <field name="periodontal_disease"/>
+                                    <field name="periodontal_teeth"/>
+                                    <field name="mobility"/>
+                                </group>
+                                <group string="A.2 / A.3 Intra-oral Findings">
+                                    <field name="torus_palatinus"/>
+                                    <field name="torus_mandibularis"/>
+                                    <field name="epulis_cyst_tumor"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="A.4 Prosthesis Present">
+                                    <field name="prosthesis_cd_upper"/>
+                                    <field name="prosthesis_cd_lower"/>
+                                    <field name="prosthesis_rpd_upper"/>
+                                    <field name="prosthesis_rpd_lower"/>
+                                    <field name="prosthesis_fpd_upper"/>
+                                    <field name="prosthesis_fpd_lower"/>
+                                    <field name="prosthesis_years"/>
+                                </group>
+                                <group string="A.5 Ridge Height">
+                                    <field name="ridge_height_upper"/>
+                                    <field name="ridge_height_lower"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Treatment Plan">
+                            <group>
+                                <group string="B.1 Periodontal">
+                                    <field name="rx_root_planing_scaling"/>
+                                    <field name="rx_extraction"/>
+                                </group>
+                                <group string="B.2 / B.3 Surgical">
+                                    <field name="rx_surgical_torus"/>
+                                    <field name="rx_surgical_biopsy"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="B.4 Prosthesis">
+                                    <field name="rx_prosthesis_repair"/>
+                                    <field name="rx_prosthesis_replacement"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Oral Health Status">
+                            <group>
+                                <field name="teeth_with_caries"/>
+                                <field name="oral_debris_calculus"/>
+                                <field name="gingivitis_periodontitis"/>
+                                <field name="dento_facial_anomaly"/>
+                                <field name="soft_tissue_lesions"/>
+                                <field name="permanent_teeth_present"/>
+                                <field name="deciduous_teeth_present"/>
+                            </group>
+                            <group string="Anomalies / Lesions">
+                                <field name="oro_facial_anomaly"/>
+                                <field name="oro_facial_anomaly_type"/>
+                                <field name="oral_lesions"/>
+                                <field name="oral_lesions_type"/>
+                            </group>
+                            <group string="Assessed By">
+                                <field name="assessed_by"/>
+                                <field name="assessed_position"/>
+                            </group>
+                        </page>
+                        <page string="Notes &amp; Attachments">
+                            <field name="clinical_notes" placeholder="Clinical notes, treatment planning decisions, instructions"/>
+                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dental_clinical_finding_search" model="ir.ui.view">
+        <field name="name">dental.clinical.finding.search</field>
+        <field name="model">dental.clinical.finding</field>
+        <field name="arch" type="xml">
+            <search string="Search Clinical Findings">
+                <field name="patient_id"/>
+                <field name="dentist_id"/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Completed" name="done" domain="[('state','=','done')]"/>
+                <separator/>
+                <filter string="Gingivitis / Periodontitis" name="gingivitis"
+                        domain="[('gingivitis_periodontitis','=',True)]"/>
+                <filter string="With Caries" name="caries"
+                        domain="[('teeth_with_caries','&gt;',0)]"/>
+                <group name="group_by">
+                    <filter string="Date" name="group_date" domain="[]" context="{'group_by':'date'}"/>
+                    <filter string="Dentist" name="group_dentist" domain="[]" context="{'group_by':'dentist_id'}"/>
+                    <filter string="State" name="group_state" domain="[]" context="{'group_by':'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dental_clinical_finding" model="ir.actions.act_window">
+        <field name="name">Clinical Findings</field>
+        <field name="res_model">dental.clinical.finding</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dental_clinical_finding_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Record your first clinical finding
+            </p>
+            <p>
+                Capture the clinician-side sections of the DOH Individual Patient
+                Treatment Record: periodontal findings (A.1-A.5), the treatment
+                plan (B.1-B.4), and the Oral Health Status indicators, together
+                with clinical notes and X-ray/photo attachments.
+            </p>
+        </field>
+    </record>
+</odoo>

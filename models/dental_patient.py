@@ -20,6 +20,13 @@ class DentalPatient(models.Model):
 
     partner_id = fields.Many2one('res.partner', string='Contact', ondelete='restrict')
 
+    portal_user_ids = fields.Many2many(
+        'res.users',
+        compute='_compute_portal_user_ids',
+        string='Portal Users',
+        readonly=True,
+    )
+
     last_name = fields.Char(string='Last Name', required=True, tracking=True)
     first_name = fields.Char(string='First Name', required=True, tracking=True)
     middle_name = fields.Char(string='Middle Name')
@@ -58,6 +65,37 @@ class DentalPatient(models.Model):
     guardian = fields.Char(string='Guardian')
     emergency_contact = fields.Char(string='Emergency Contact')
 
+    source = fields.Selection([
+        ('walk_in', 'Walk-in'),
+        ('web_intake', 'Web Intake'),
+    ], string='Source', default='walk_in')
+    intake_status = fields.Selection([
+        ('pending_review', 'Pending Review'),
+        ('processed', 'Processed'),
+    ], string='Intake Status')
+
+    barangay = fields.Char(string='Barangay')
+    philhealth_number = fields.Char(string='PhilHealth Number')
+
+    is_4ps_recipient = fields.Boolean(string='4Ps Recipient')
+    is_4ps_beneficiary = fields.Boolean(string='4Ps Beneficiary')
+    is_indigenous = fields.Boolean(string='Indigenous People (IP)')
+    is_senior = fields.Boolean(string='Senior Citizen')
+    is_pwd = fields.Boolean(string='Person with Disability (PWD)')
+    is_solo_parent = fields.Boolean(string='Solo Parent')
+
+    last_dental_visit = fields.Date(string='Last Dental Visit')
+    dental_visit_frequency = fields.Selection([
+        ('twice_year', 'At least twice a year'),
+        ('once_year', 'Once a year'),
+        ('never', 'Never'),
+    ], string='Dental Visit Frequency')
+    orthodontic_history = fields.Char(string='Orthodontic Treatment History')
+    dental_prosthesis = fields.Boolean(string='Has Dental Prosthesis')
+    dental_prosthesis_since = fields.Char(string='Dental Prosthesis Since')
+    referred_by = fields.Char(string='Referred By')
+    referred_reason = fields.Char(string='Referral Reason')
+
     signature = fields.Binary(string='Signature', attachment=True)
     signature_name = fields.Char(string='Signature Name')
 
@@ -71,6 +109,11 @@ class DentalPatient(models.Model):
         readonly=True,
     )
     consent_ids = fields.One2many('dental.consent', 'patient_id', string='Consents')
+    clinical_finding_ids = fields.One2many(
+        'dental.clinical.finding',
+        'patient_id',
+        string='Clinical Findings',
+    )
 
     active = fields.Boolean(string='Active', default=True)
 
@@ -95,6 +138,165 @@ class DentalPatient(models.Model):
         for rec in self:
             parts = [rec.first_name, rec.middle_name, rec.last_name]
             rec.display_name = ' '.join(p for p in parts if p)
+
+    @api.depends('partner_id')
+    def _compute_portal_user_ids(self):
+        users = self.env['res.users'].sudo()
+        for rec in self:
+            if rec.partner_id:
+                rec.portal_user_ids = users.search([('partner_id', '=', rec.partner_id.id)])
+            else:
+                rec.portal_user_ids = False
+
+    def _partner_vals(self):
+        self.ensure_one()
+        vals = {
+            'name': self.display_name or (self.first_name or self.last_name),
+            'type': 'contact',
+            'is_company': False,
+        }
+        if self.email:
+            vals['email'] = self.email
+        if self.mobile:
+            vals['phone'] = self.mobile
+        if self.home_address:
+            lines = [ln.strip() for ln in self.home_address.split('\n') if ln.strip()]
+            if lines:
+                vals['street'] = lines[0]
+                if len(lines) > 1:
+                    vals['street2'] = '\n'.join(lines[1:])
+        return vals
+
+    def _create_customer_partner(self):
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner and self.email:
+            other = self.env['dental.patient'].search([
+                ('id', '!=', self.id),
+                ('email', '=ilike', self.email),
+            ], limit=1)
+            if other and other.partner_id:
+                partner = other.partner_id
+            else:
+                partner = self.env['res.partner'].search([
+                    ('email', '=ilike', self.email),
+                    ('type', '=', 'contact'),
+                ], limit=1)
+                if partner and self.env['dental.patient'].search_count([
+                    ('partner_id', '=', partner.id),
+                    ('id', '!=', self.id),
+                ]):
+                    partner = self.env['res.partner']
+        if not partner:
+            partner = self.env['res.partner'].create(self._partner_vals())
+        else:
+            self._sync_partner()
+        if self.partner_id.id != partner.id:
+            self.write({'partner_id': partner.id})
+        return partner
+
+    def _sync_partner(self):
+        self.ensure_one()
+        if not self.partner_id:
+            return
+        vals = self._partner_vals()
+        if vals:
+            self.partner_id.write(vals)
+
+    def write(self, vals):
+        res = super().write(vals)
+        if res and vals.keys() & {
+                'last_name', 'first_name', 'middle_name',
+                'email', 'mobile', 'home_address'}:
+            for rec in self:
+                rec._sync_partner()
+        return res
+
+    def action_create_portal_user(self):
+        self.ensure_one()
+        if not self.email:
+            raise ValidationError(
+                'Cannot create portal login: the patient has no e-mail address.'
+            )
+        partner = self._create_customer_partner()
+
+        users_env = self.env['res.users'].sudo()
+        user = users_env.search([('login', '=ilike', self.email)], limit=1)
+        if not user:
+            user = users_env.create({
+                'name': self.display_name,
+                'login': self.email,
+                'partner_id': partner.id,
+                'group_ids': [(6, 0, [self.env.ref('base.group_portal').id])],
+            })
+        else:
+            same_partner = user.partner_id.id == partner.id
+            is_internal = self.env.ref('base.group_user').id in user.all_group_ids.ids
+            if not same_partner and is_internal:
+                raise ValidationError(
+                    'The e-mail %s is already used by an internal user. '
+                    'Use a different e-mail address for portal access.' % self.email
+                )
+            vals = {'group_ids': [(4, self.env.ref('base.group_portal').id)]}
+            if not same_partner:
+                vals['partner_id'] = partner.id
+            if user.name != self.display_name:
+                vals['name'] = self.display_name
+            user.write(vals)
+
+        partner.signup_prepare('signup')
+        template = self.env.ref('auth_signup.portal_set_password_email')
+        template.with_context(force_send=True).send_mail(user.id)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Invitation Sent',
+                'message': 'An invitation e-mail was sent to %s to create '
+                           'their portal login.' % self.email,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_mark_intake_processed(self):
+        self.ensure_one()
+        self.write({'intake_status': 'processed'})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Intake Processed',
+                'message': 'Patient %s has been marked as processed.' % self.display_name,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_reset_intake_pending(self):
+        self.ensure_one()
+        self.write({'intake_status': 'pending_review'})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Intake Reopened',
+                'message': 'Patient %s is back in the pending review queue.' % self.display_name,
+                'type': 'info',
+                'sticky': False,
+            },
+        }
+
+    def action_new_clinical_finding(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'New Clinical Finding',
+            'res_model': 'dental.clinical.finding',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {'default_patient_id': self.id},
+        }
 
     @api.depends('birthdate')
     def _compute_age(self):

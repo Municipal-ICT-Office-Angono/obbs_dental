@@ -11,6 +11,8 @@ class DentalConsent(models.Model):
 
     consent_type = fields.Selection([
         ('general', 'General Treatment'),
+        ('data_privacy', 'Data Privacy Consent'),
+        ('waiver', 'Extraction Waiver'),
         ('surgery', 'Surgery'),
         ('anesthesia', 'Anesthesia'),
         ('photo', 'Photo / Video'),

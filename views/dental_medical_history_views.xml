@@ -8,6 +8,8 @@
                 <field name="patient_id"/>
                 <field name="date"/>
                 <field name="version"/>
+                <field name="hypertension" widget="boolean_toggle"/>
+                <field name="diabetes" widget="boolean_toggle"/>
                 <field name="smoking" widget="boolean_toggle"/>
                 <field name="alcohol_use" widget="boolean_toggle"/>
                 <field name="pregnancy" widget="boolean_toggle"/>
@@ -44,12 +46,30 @@
                                 <field name="hospitalization" placeholder="Note any past hospital admissions"/>
                             </group>
                         </page>
-                        <page string="Lifestyle">
-                            <group>
+                        <page string="DOH Conditions">
+                            <group string="Medical Conditions">
+                                <field name="under_medical_treatment" widget="boolean_toggle"/>
+                                <field name="under_medical_treatment_notes" placeholder="Condition being treated"/>
+                                <field name="hypertension" widget="boolean_toggle"/>
+                                <field name="diabetes" widget="boolean_toggle"/>
+                                <field name="blood_disorders" widget="boolean_toggle"/>
+                                <field name="cardiovascular" widget="boolean_toggle"/>
+                                <field name="thyroid_disorders" widget="boolean_toggle"/>
+                                <field name="hepatitis" widget="boolean_toggle"/>
+                                <field name="malignancy" widget="boolean_toggle"/>
+                                <field name="hospitalization_history" widget="boolean_toggle"/>
+                                <field name="blood_transfusion" widget="boolean_toggle"/>
+                            </group>
+                            <group string="Lifestyle / Social">
                                 <field name="smoking" widget="boolean_toggle"/>
                                 <field name="alcohol_use" widget="boolean_toggle"/>
+                                <field name="betel_nut" widget="boolean_toggle"/>
                                 <field name="pregnancy" widget="boolean_toggle"/>
+                                <field name="pregnancy_months"/>
+                                <field name="nursing" widget="boolean_toggle"/>
+                                <field name="birth_control_pills" widget="boolean_toggle"/>
                                 <field name="bruxism" widget="boolean_toggle"/>
+                                <field name="tattoo" widget="boolean_toggle"/>
                             </group>
                         </page>
                         <page string="Notes">

@@ -123,5 +123,31 @@
             <field name="name">Removable Denture</field>
             <field name="color">#3498DB</field>
         </record>
+        <record id="condition_gingivitis" model="dental.condition">
+            <field name="code">Gi</field>
+            <field name="name">Gingivitis</field>
+            <field name="color">#81C784</field>
+        </record>
+        <record id="condition_periodontal" model="dental.condition">
+            <field name="code">PD</field>
+            <field name="name">Periodontal Disease</field>
+            <field name="color">#A1887F</field>
+        </record>
+        <record id="condition_oral_debris" model="dental.condition">
+            <field name="code">OD</field>
+            <field name="name">Oral Debris</field>
+            <field name="color">#BDBDBD</field>
+        </record>
+        <record id="condition_calculus" model="dental.condition">
+            <field name="code">Ca</field>
+            <field name="name">Calculus</field>
+            <field name="color">#9E9E9E</field>
+        </record>
+        <record id="condition_dento_facial" model="dental.condition">
+            <field name="code">DFA</field>
+            <field name="name">Dento-Facial Anomaly</field>
+            <field name="color">#F06292</field>
+            <field name="apply_to_whole_tooth">True</field>
+        </record>
     </data>
 </odoo>

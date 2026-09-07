@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="patient_intake_page" name="Dental Patient Intake Form">
+        <t t-call="website.layout">
+            <t t-set="page_title">Dental Patient Intake Form</t>
+            <div id="wrap" class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-9">
+
+                        <div class="text-center my-4">
+                            <div class="text-muted small text-uppercase fw-semibold">
+                                Republic of the Philippines &amp;bull; Province of Rizal
+                            </div>
+                            <h3 class="mb-1">Municipal Health Office &amp;mdash; Angono</h3>
+                            <h5 class="text-muted">Individual Treatment Record &amp;mdash; Online Patient Intake</h5>
+                            <p class="text-muted mb-0">
+                                New patients: please fill out this form before your first
+                                visit to reduce waiting time at the clinic.
+                            </p>
+                        </div>
+
+                        <t t-if="errors">
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Please fix the following before submitting:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <t t-foreach="errors" t-as="e">
+                                        <li t-esc="e['msg']"/>
+                                    </t>
+                                </ul>
+                            </div>
+                        </t>
+
+                        <form id="odental_intake_form" method="post" action="/patient-intake"
+                              novalidate="novalidate">
+                            <input type="hidden" name="csrf_token" t-att-value="csrf_token"/>
+                            <input type="text" name="website" class="o_hp" tabindex="-1"
+                                   autocomplete="off" aria-hidden="true"
+                                   style="position:absolute; left:-9999px; width:1px; height:1px;"/>
+
+                            <ol class="o_intake_progress d-flex justify-content-between mb-4">
+                                <li data-step-ind="1"><span class="o_intake_num">1</span>Personal</li>
+                                <li data-step-ind="2"><span class="o_intake_num">2</span>Dental History</li>
+                                <li data-step-ind="3"><span class="o_intake_num">3</span>Medical History</li>
+                                <li data-step-ind="4"><span class="o_intake_num">4</span>Allergies &amp; Conditions</li>
+                                <li data-step-ind="5"><span class="o_intake_num">5</span>Consent &amp; Waiver</li>
+                            </ol>
+
+                            <fieldset t-att-class="'o_intake_step' + (' active' if 1 == active_step else '')" t-att-disabled="'1' if 1 != active_step else None">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-user me-1"/> Personal Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="first_name" required="1"
+                                                       placeholder="e.g. Maria" autocomplete="given-name"
+                                                       t-att-value="posted.get('first_name') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Middle Name</label>
+                                                <input type="text" class="form-control" name="middle_name"
+                                                       placeholder="e.g. Santos" autocomplete="additional-name"
+                                                       t-att-value="posted.get('middle_name') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="last_name" required="1"
+                                                       placeholder="e.g. Reyes" autocomplete="family-name"
+                                                       t-att-value="posted.get('last_name') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                                <input type="date" class="form-control" name="birthdate" required="1"
+                                                       max="2026-12-31" t-att-value="posted.get('birthdate') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Sex <span class="text-danger">*</span></label>
+                                                <select class="form-select" name="sex" required="1">
+                                                    <option value="">Select</option>
+                                                    <option value="male" t-att-selected="posted.get('sex') == 'male' and 'selected' or None">Male</option>
+                                                    <option value="female" t-att-selected="posted.get('sex') == 'female' and 'selected' or None">Female</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Contact Number <span class="text-danger">*</span></label>
+                                                <input type="tel" class="form-control" name="mobile" required="1"
+                                                       placeholder="e.g. 09171234567" autocomplete="tel"
+                                                       t-att-value="posted.get('mobile') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">E-mail Address</label>
+                                                <input type="email" class="form-control" name="email"
+                                                       placeholder="e.g. maria.reyes@email.com" autocomplete="email"
+                                                       t-att-value="posted.get('email') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Barangay <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="barangay" required="1"
+                                                       placeholder="e.g. San Isidro"
+                                                       t-att-value="posted.get('barangay') or ''"/>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Complete Address <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="address" required="1"
+                                                       placeholder="House no., street, sitio / purok, barangay, Angono, Rizal"
+                                                       autocomplete="street-address"
+                                                       t-att-value="posted.get('address') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Occupation</label>
+                                                <input type="text" class="form-control" name="occupation"
+                                                       placeholder="e.g. Teacher" autocomplete="organization-title"
+                                                       t-att-value="posted.get('occupation') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">PhilHealth Number</label>
+                                                <input type="text" class="form-control" name="philhealth_number"
+                                                       placeholder="e.g. 12-345678901-2"
+                                                       t-att-value="posted.get('philhealth_number') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Parent / Guardian</label>
+                                                <input type="text" class="form-control" name="guardian"
+                                                       placeholder="Required for minors under 18"
+                                                       t-att-value="posted.get('guardian') or ''"/>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="mt-4 mb-2">Other Patient Information <span class="text-muted fw-normal">(check all that apply)</span></h6>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="p4s_recipient" name="p4s_recipient"
+                                                       t-att-checked="posted.get('p4s_recipient') and 'checked' or None"/>
+                                                <label class="form-check-label" for="p4s_recipient">4P's Recipient</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="p4s_beneficiary" name="p4s_beneficiary"
+                                                       t-att-checked="posted.get('p4s_beneficiary') and 'checked' or None"/>
+                                                <label class="form-check-label" for="p4s_beneficiary">4P's Beneficiary</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="ip" name="ip"
+                                                       t-att-checked="posted.get('ip') and 'checked' or None"/>
+                                                <label class="form-check-label" for="ip">Indigenous People (IP)</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="senior" name="senior"
+                                                       t-att-checked="posted.get('senior') and 'checked' or None"/>
+                                                <label class="form-check-label" for="senior">Senior Citizen</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="pwd" name="pwd"
+                                                       t-att-checked="posted.get('pwd') and 'checked' or None"/>
+                                                <label class="form-check-label" for="pwd">Person with Disability (PWD)</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="solo_parent" name="solo_parent"
+                                                       t-att-checked="posted.get('solo_parent') and 'checked' or None"/>
+                                                <label class="form-check-label" for="solo_parent">Solo Parent</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset t-att-class="'o_intake_step' + (' active' if 2 == active_step else '')" t-att-disabled="'1' if 2 != active_step else None">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-tooth me-1"/> Dental History</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Most recent dental visit</label>
+                                                <input type="date" class="form-control" name="last_dental_visit"
+                                                       max="2026-12-31" t-att-value="posted.get('last_dental_visit') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">How often do you visit the dentist?</label>
+                                                <select class="form-select" name="visit_frequency">
+                                                    <option value="">Select</option>
+                                                    <option value="twice_year" t-att-selected="posted.get('visit_frequency') == 'twice_year' and 'selected' or None">At least twice a year</option>
+                                                    <option value="once_year" t-att-selected="posted.get('visit_frequency') == 'once_year' and 'selected' or None">Once a year</option>
+                                                    <option value="never" t-att-selected="posted.get('visit_frequency') == 'never' and 'selected' or None">Never</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">History / current orthodontic treatment</label>
+                                                <input type="text" class="form-control" name="orthodontic_history"
+                                                       placeholder="e.g. Braces worn in 2021, currently wearing retainers"
+                                                       t-att-value="posted.get('orthodontic_history') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-5 form-check">
+                                                <input type="checkbox" class="form-check-input" id="prosthesis" name="prosthesis"
+                                                       t-att-checked="posted.get('prosthesis') and 'checked' or None"/>
+                                                <label class="form-check-label" for="prosthesis">Do you have a dental prosthesis? (dentures / bridge / crown)</label>
+                                            </div>
+                                            <div class="col-12 col-md-7">
+                                                <label class="form-label">If yes, since when?</label>
+                                                <input type="text" class="form-control" name="prosthesis_since"
+                                                       placeholder="e.g. Since 2020"
+                                                       t-att-value="posted.get('prosthesis_since') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Referred by</label>
+                                                <input type="text" class="form-control" name="referred_by"
+                                                       placeholder="e.g. Barangay health worker, name of referrer"
+                                                       t-att-value="posted.get('referred_by') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Reason for referral (if any)</label>
+                                                <input type="text" class="form-control" name="referred_reason"
+                                                       placeholder="e.g. Tooth pain"
+                                                       t-att-value="posted.get('referred_reason') or ''"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset t-att-class="'o_intake_step' + (' active' if 3 == active_step else '')" t-att-disabled="'1' if 3 != active_step else None">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-heartbeat me-1"/> Medical History</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="under_treatment" name="under_treatment"
+                                                       t-att-checked="posted.get('under_treatment') and 'checked' or None"/>
+                                                <label class="form-check-label" for="under_treatment">Are you under medical treatment now?</label>
+                                            </div>
+                                            <input type="text" class="form-control mt-2" name="under_treatment_notes"
+                                                   placeholder="If so, what condition is being treated?"
+                                                   t-att-value="posted.get('under_treatment_notes') or ''"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="serious_illness" name="serious_illness"
+                                                       t-att-checked="posted.get('serious_illness') and 'checked' or None"/>
+                                                <label class="form-check-label" for="serious_illness">Have you ever had a serious illness or surgical operation?</label>
+                                            </div>
+                                            <input type="text" class="form-control mt-2" name="serious_illness_notes"
+                                                   placeholder="If so, what illness or operation?"
+                                                   t-att-value="posted.get('serious_illness_notes') or ''"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="was_hospitalized" name="was_hospitalized"
+                                                       t-att-checked="posted.get('was_hospitalized') and 'checked' or None"/>
+                                                <label class="form-check-label" for="was_hospitalized">Have you ever been hospitalized?</label>
+                                            </div>
+                                            <input type="text" class="form-control mt-2" name="hospitalized_notes"
+                                                   placeholder="If so, when &amp; why?"
+                                                   t-att-value="posted.get('hospitalized_notes') or ''"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="taking_medication" name="taking_medication"
+                                                       t-att-checked="posted.get('taking_medication') and 'checked' or None"/>
+                                                <label class="form-check-label" for="taking_medication">Are you taking any prescription / non-prescription medicine?</label>
+                                            </div>
+                                            <input type="text" class="form-control mt-2" name="medication_notes"
+                                                   placeholder="If so, please specify"
+                                                   t-att-value="posted.get('medication_notes') or ''"/>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="tobacco" name="tobacco"
+                                                       t-att-checked="posted.get('tobacco') and 'checked' or None"/>
+                                                <label class="form-check-label" for="tobacco">Do you use tobacco products?</label>
+                                            </div>
+                                            <div class="col-12 col-md-6 form-check">
+                                                <input type="checkbox" class="form-check-input" id="alcohol_drugs" name="alcohol_drugs"
+                                                       t-att-checked="posted.get('alcohol_drugs') and 'checked' or None"/>
+                                                <label class="form-check-label" for="alcohol_drugs">Do you use alcohol or other dangerous drugs?</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset t-att-class="'o_intake_step' + (' active' if 4 == active_step else '')" t-att-disabled="'1' if 4 != active_step else None">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-pills me-1"/> Allergies &amp; Conditions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Are you allergic to any of the following?</h6>
+                                        <div class="row g-2 mb-4">
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="allergy_anesthetics" name="allergy_anesthetics"
+                                                       t-att-checked="posted.get('allergy_anesthetics') and 'checked' or None"/>
+                                                <label class="form-check-label" for="allergy_anesthetics">Local anesthetics</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="allergy_penicillin" name="allergy_penicillin"
+                                                       t-att-checked="posted.get('allergy_penicillin') and 'checked' or None"/>
+                                                <label class="form-check-label" for="allergy_penicillin">Penicillin / Antibiotics</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="allergy_aspirin" name="allergy_aspirin"
+                                                       t-att-checked="posted.get('allergy_aspirin') and 'checked' or None"/>
+                                                <label class="form-check-label" for="allergy_aspirin">Aspirin</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="allergy_sulfa" name="allergy_sulfa"
+                                                       t-att-checked="posted.get('allergy_sulfa') and 'checked' or None"/>
+                                                <label class="form-check-label" for="allergy_sulfa">Sulfa drugs</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="allergy_latex" name="allergy_latex"
+                                                       t-att-checked="posted.get('allergy_latex') and 'checked' or None"/>
+                                                <label class="form-check-label" for="allergy_latex">Latex</label>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <input type="text" class="form-control" name="allergy_others"
+                                                       placeholder="Others"
+                                                       t-att-value="posted.get('allergy_others') or ''"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-light border text-muted small">
+                                            <i class="fa fa-female me-1"/> For women only: are you pregnant (if so, indicate months), nursing, or taking birth control pills?
+                                        </div>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="pregnant" name="pregnant"
+                                                       t-att-checked="posted.get('pregnant') and 'checked' or None"/>
+                                                <label class="form-check-label" for="pregnant">Pregnant</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="nursing" name="nursing"
+                                                       t-att-checked="posted.get('nursing') and 'checked' or None"/>
+                                                <label class="form-check-label" for="nursing">Nursing</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 form-check">
+                                                <input type="checkbox" class="form-check-input" id="birth_control" name="birth_control"
+                                                       t-att-checked="posted.get('birth_control') and 'checked' or None"/>
+                                                <label class="form-check-label" for="birth_control">Taking birth control pills</label>
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">If pregnant, months:</label>
+                                                <input type="text" class="form-control" name="pregnancy_months"
+                                                       placeholder="e.g. 4 months"
+                                                       t-att-value="posted.get('pregnancy_months') or ''"/>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="text-muted">Do you have or have you had any of the following? <span class="fw-normal">(check all that apply)</span></h6>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-4 form-check" t-foreach="_CONDITIONS" t-as="c">
+                                                <input type="checkbox" class="form-check-input" t-att-id="c['key']"
+                                                       t-att-name="c['key']"
+                                                       t-att-checked="posted.get(c['key']) and 'checked' or None"/>
+                                                <label class="form-check-label" t-att-for="c['key']" t-esc="c['label']"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4 mt-3">
+                                            <input type="text" class="form-control" name="cond_others"
+                                                   placeholder="Others (please specify)"
+                                                   t-att-value="posted.get('cond_others') or ''"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset t-att-class="'o_intake_step' + (' active' if 5 == active_step else '')" t-att-disabled="'1' if 5 != active_step else None">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-file-signature me-1"/> Consent &amp; Waiver</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>Data Privacy Consent</h6>
+                                        <div class="border rounded bg-light p-3 mb-3 small">
+                                            <p class="mb-2">
+                                                Pinapatunayan ko na ang lahat ng impormasyong ibinigay ay tama at
+                                                totoo. Pinahihintulutan ko ang pagproseso ng aking mga personal na
+                                                datos, kabilang na ang resulta ng aking dental na operasyon at pagsusuri
+                                                na makukuha mula sa akin ng pasilidad na ito. Gayundin, ang naturang
+                                                pasilidad ay pinahihintulutan ko na gamitin at iproseso ang naturang
+                                                datos o impormasyon para sa anumang kadahilanang may kaugnayan sa aking
+                                                dental na operasyon at pag susuri.
+                                            </p>
+                                            <p class="mb-0">
+                                                Pinagtitibay ko ang aking Karapatan na maabisuhan, tumutol sa
+                                                pagproseso, magkaroon ng kopya at Maitama, ipasuspinde o bawiin ang
+                                                aking personal na datos at makatanggap ng danyos kung sakaling may
+                                                pinsala, alinsunod sa mga probisyon ng Republic Act No. 10173 ang Data
+                                                Privacy Act of 2012 at ang mga regulasyon kaugnay nito.
+                                            </p>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input type="checkbox" class="form-check-input" id="consent_agree" name="consent_agree" required="1"
+                                                   t-att-checked="posted.get('consent_agree') and 'checked' or None"/>
+                                            <label class="form-check-label" for="consent_agree">
+                                                I agree to the Data Privacy Consent above. <span class="text-danger">*</span>
+                                            </label>
+                                        </div>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Full Name on Consent <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="consent_name" required="1"
+                                                       placeholder="Buong pangalan"
+                                                       t-att-value="posted.get('consent_name') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-8">
+                                                <label class="form-label">Signature <span class="text-danger">*</span></label>
+                                                <div class="o_sig_pad card border" data-sig-pad="consent">
+                                                    <canvas width="600" height="200"></canvas>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                            data-sig-clear="consent"><i class="fa fa-eraser me-1"/>Clear</button>
+                                                    <small class="text-muted">Draw your signature on the line using your finger or stylus</small>
+                                                </div>
+                                                <input type="hidden" name="consent_signature"
+                                                       data-sig-input="consent" data-sig-required="1"/>
+                                            </div>
+                                        </div>
+
+                                        <hr/>
+
+                                        <h6>Waiver</h6>
+                                        <div class="border rounded bg-light p-3 mb-3 small">
+                                            <p class="mb-2">
+                                                Ako ay nasa mabuting kalusugan (i.e. walang sakit sa puso, hypertension,
+                                                diabetes, pagdurugo, AIDS, sakit sa buto o iba pang karamdaman) at
+                                                maaring magpabunot ng ngipin ng walang peligro sa akin. Ako ay
+                                                nakapagkonsulta na sa doctor at walang pagbabawal sa akin na bunutan ng
+                                                ngipin.
+                                            </p>
+                                            <p class="mb-2">
+                                                Ako ay sumasang-ayon na kung mayroong mali o huwad na impormasyon sa
+                                                anumang aking ipinapahayag na walang magiging pananagutan ang dentistang
+                                                kokonsultahin ko at magbubunot ng aking ngipin. Hindi ako magsasampa ng
+                                                anumang reklamo o demanda laban sa sino man sa kanila sa korte o kung
+                                                saang ahensyang pamahalaan o organisasyon kaugnay sa aking pagpapabunot
+                                                ng ngipin o sa anumang magiging resulta nito.
+                                            </p>
+                                            <p class="mb-2">
+                                                Susundin ko ang lahat ng magiging bilin ng aking dentista pagkatapos na
+                                                ako ay bunutan at iinumin ko sa tamang paraan at tagal ang gamot na
+                                                maaring ibigay o ireseta sa akin.
+                                            </p>
+                                            <p class="mb-0">
+                                                Naiintindihan ko ang salaysay na ito at malaya ko itong ginawa at
+                                                nilagdaan.
+                                            </p>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input type="checkbox" class="form-check-input" id="waiver_agree" name="waiver_agree" required="1"
+                                                   t-att-checked="posted.get('waiver_agree') and 'checked' or None"/>
+                                            <label class="form-check-label" for="waiver_agree">
+                                                I agree to the Waiver above. <span class="text-danger">*</span>
+                                            </label>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label">Full Name on Waiver <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="waiver_name" required="1"
+                                                       placeholder="Buong pangalan"
+                                                       t-att-value="posted.get('waiver_name') or ''"/>
+                                            </div>
+                                            <div class="col-12 col-md-8">
+                                                <label class="form-label">Signature <span class="text-danger">*</span></label>
+                                                <div class="o_sig_pad card border" data-sig-pad="waiver">
+                                                    <canvas width="600" height="200"></canvas>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                            data-sig-clear="waiver"><i class="fa fa-eraser me-1"/>Clear</button>
+                                                    <small class="text-muted">Draw your signature on the line using your finger or stylus</small>
+                                                </div>
+                                                <input type="hidden" name="waiver_signature"
+                                                       data-sig-input="waiver" data-sig-required="1"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div class="d-flex justify-content-between align-items-center mb-5">
+                                <button type="button" class="btn btn-secondary" data-step-prev="1">
+                                    <i class="fa fa-arrow-left me-1"/>Back
+                                </button>
+                                <button type="button" class="btn btn-primary" data-step-next="1">
+                                    Next<i class="fa fa-arrow-right ms-1"/>
+                                </button>
+                                <button type="submit" class="btn btn-success d-none" data-step-submit="1">
+                                    <i class="fa fa-paper-plane me-1"/>Submit Intake Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .o_intake_step{display:none;}
+                .o_intake_step.active{display:block;}
+                .o_intake_progress{list-style:none;padding:0;margin:0;flex-wrap:wrap;gap:.75rem;}
+                .o_intake_progress li{display:flex;align-items:center;gap:.4rem;color:#6c757d;font-size:.85rem;font-weight:600;}
+                .o_intake_progress .o_intake_num{width:1.6rem;height:1.6rem;border-radius:50%;background:#e9ecef;color:#6c757d;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;}
+                .o_intake_progress li.active{color:#0d6efd;}
+                .o_intake_progress li.active .o_intake_num{background:#0d6efd;color:#fff;}
+                .o_intake_progress li.done{color:#198754;}
+                .o_intake_progress li.done .o_intake_num{background:#198754;color:#fff;}
+                .o_sig_pad canvas{width:100%;height:auto;background:#fff;touch-action:none;display:block;cursor:crosshair;}
+            </style>
+        </t>
+    </template>
+
+    <template id="patient_intake_thanks" name="Intake Form Received">
+        <t t-call="website.layout">
+            <t t-set="page_title">Intake Form Received</t>
+            <div id="wrap" class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-7">
+                        <div class="card text-center my-5 shadow-sm">
+                            <div class="card-body p-4 p-md-5">
+                                <div class="mb-3">
+                                    <i class="fa fa-check-circle text-success" style="font-size:3rem;"></i>
+                                </div>
+                                <h3 class="mb-1">Your intake form has been received</h3>
+                                <t t-if="patient">
+                                    <p class="text-muted mb-3">
+                                        Thank you, <strong t-out="patient.display_name"/>. Please note your
+                                        patient reference number below and present a valid ID at the clinic on
+                                        the day of your visit.
+                                    </p>
+                                    <div class="display-6 fw-bold text-primary mb-3" t-out="patient.patient_number"/>
+                                    <p class="small text-muted mb-4">
+                                        The clinic will brief you on your appointment schedule. All information
+                                        you provided will only be used for your dental care and treatment records.
+                                    </p>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted mb-4">
+                                        If you do not receive a confirmation, please retry submitting the form.
+                                    </p>
+                                </t>
+                                <a href="/patient-intake" class="btn btn-primary">
+                                    <i class="fa fa-user-plus me-1"/>New Patient Intake
+                                </a>
+                                <a href="/" class="btn btn-outline-secondary ms-2">
+                                    <i class="fa fa-home me-1"/>Back to Home
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

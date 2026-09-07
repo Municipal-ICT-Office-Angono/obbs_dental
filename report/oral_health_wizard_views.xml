@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_oral_health_wizard_form" model="ir.ui.view">
+        <field name="name">report.oral.health.wizard.form</field>
+        <field name="model">report.oral.health.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Oral Health Form 2 Report">
+                <group>
+                    <group>
+                        <field name="year"/>
+                        <field name="report_type"/>
+                        <field name="month" invisible="report_type != 'monthly'"/>
+                        <field name="quarter" invisible="report_type != 'quarterly'"/>
+                    </group>
+                    <group>
+                        <field name="province"/>
+                        <field name="municipality"/>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Generate Report" type="object"
+                            name="action_generate_report" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_oral_health_wizard" model="ir.actions.act_window">
+        <field name="name">Oral Health Form 2</field>
+        <field name="res_model">report.oral.health.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -21,9 +21,27 @@ class DentalMedicalHistory(models.Model):
     alcohol_use = fields.Boolean(string='Alcohol Use')
     pregnancy = fields.Boolean(string='Pregnancy')
     bruxism = fields.Boolean(string='Bruxism')
+    betel_nut = fields.Boolean(string='Betel Nut Chewer')
+    tattoo = fields.Boolean(string='Tattoo')
 
     allergies = fields.Text(string='Allergies')
     medical_conditions = fields.Text(string='Medical Conditions')
+
+    under_medical_treatment = fields.Boolean(string='Under Medical Treatment')
+    under_medical_treatment_notes = fields.Text(string='Medical Treatment Details')
+    nursing = fields.Boolean(string='Nursing')
+    birth_control_pills = fields.Boolean(string='Birth Control Pills')
+    pregnancy_months = fields.Char(string='Pregnancy (months)')
+
+    hypertension = fields.Boolean(string='Hypertension/CVA')
+    diabetes = fields.Boolean(string='Diabetes Mellitus')
+    blood_disorders = fields.Boolean(string='Blood Disorders')
+    cardiovascular = fields.Boolean(string='Cardiovascular/Heart Disease')
+    thyroid_disorders = fields.Boolean(string='Thyroid Disorders')
+    hepatitis = fields.Boolean(string='Hepatitis')
+    malignancy = fields.Boolean(string='Malignancy')
+    hospitalization_history = fields.Boolean(string='History of Hospitalization')
+    blood_transfusion = fields.Boolean(string='Blood Transfusion')
 
     notes = fields.Text(string='Notes')
     created_by = fields.Many2one('res.users', string='Created By', default=lambda self: self.env.user)

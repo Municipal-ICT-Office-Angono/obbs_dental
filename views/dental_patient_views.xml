@@ -22,7 +22,16 @@
         <field name="arch" type="xml">
             <form string="Patient">
                 <header>
+                    <button name="action_new_clinical_finding" type="object"
+                            string="Clinical Finding" class="btn-primary"
+                            help="Open a new clinical finding / consultation record for this patient"/>
                     <field name="active" widget="boolean_toggle"/>
+                    <button name="action_mark_intake_processed" type="object"
+                            string="Mark Processed" class="btn-primary"
+                            invisible="source != 'web_intake' or intake_status != 'pending_review'"/>
+                    <button name="action_reset_intake_pending" type="object"
+                            string="Reopen Intake"
+                            invisible="source != 'web_intake' or intake_status != 'processed'"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -31,6 +40,8 @@
                         </h1>
                         <group>
                             <field name="patient_number"/>
+                            <field name="source" invisible="1"/>
+                            <field name="intake_status"/>
                         </group>
                     </div>
                     <notebook>
@@ -46,6 +57,7 @@
                                     <field name="age"/>
                                     <field name="sex"/>
                                     <field name="blood_type"/>
+                                    <field name="barangay" placeholder="e.g. San Isidro"/>
                                     <field name="nationality" placeholder="e.g. American"/>
                                     <field name="religion" placeholder="e.g. Catholic"/>
                                     <field name="occupation" placeholder="e.g. Engineer"/>
@@ -69,6 +81,28 @@
                                     <field name="dental_insurance" placeholder="e.g. Delta Dental, Plan #12345"/>
                                     <field name="guardian" placeholder="e.g. Parent or legal guardian name"/>
                                     <field name="emergency_contact" placeholder="e.g. Name and phone number"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Intake &amp; DOH">
+                            <group>
+                                <group string="Program Indicators">
+                                    <field name="philhealth_number" placeholder="e.g. 12-345678901-2"/>
+                                    <field name="is_4ps_recipient"/>
+                                    <field name="is_4ps_beneficiary"/>
+                                    <field name="is_indigenous"/>
+                                    <field name="is_senior"/>
+                                    <field name="is_pwd"/>
+                                    <field name="is_solo_parent"/>
+                                </group>
+                                <group string="Dental History">
+                                    <field name="last_dental_visit"/>
+                                    <field name="dental_visit_frequency"/>
+                                    <field name="orthodontic_history" placeholder="Past or current orthodontic treatment"/>
+                                    <field name="dental_prosthesis"/>
+                                    <field name="dental_prosthesis_since" placeholder="e.g. Since 2020"/>
+                                    <field name="referred_by"/>
+                                    <field name="referred_reason"/>
                                 </group>
                             </group>
                         </page>
@@ -115,6 +149,38 @@
                         </page>
                         <page string="Dental Chart">
                             <field name="tooth_conditions" widget="dental_chart"/>
+                        </page>
+                        <page string="Clinical Findings" name="clinical_findings">
+                            <field name="clinical_finding_ids">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="dentist_id"/>
+                                    <field name="state"/>
+                                    <field name="gingivitis_periodontitis" widget="boolean_toggle"/>
+                                    <field name="periodontal_disease" widget="boolean_toggle"/>
+                                    <field name="teeth_with_caries"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group string="Assessment">
+                                            <field name="patient_id" invisible="1"/>
+                                            <field name="date"/>
+                                            <field name="dentist_id"/>
+                                            <field name="state" invisible="1"/>
+                                        </group>
+                                        <group string="Clinical Findings">
+                                            <field name="periodontal_disease"/>
+                                            <field name="periodontal_teeth"/>
+                                            <field name="mobility"/>
+                                            <field name="gingivitis_periodontitis"/>
+                                            <field name="teeth_with_caries"/>
+                                        </group>
+                                    </group>
+                                    <group string="Clinical Notes">
+                                        <field name="clinical_notes"/>
+                                    </group>
+                                </form>
+                            </field>
                         </page>
                         <page string="Dental History">
                             <field name="tooth_surface_ids">
@@ -167,6 +233,28 @@
                                 <field name="signature_name"/>
                             </group>
                         </page>
+                        <page string="Portal Access" name="portal_access"
+                              groups="obbs_dental.group_dental_manager">
+                            <group>
+                                <group string="Contact Link">
+                                    <field name="partner_id" readonly="1"
+                                           options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="portal_user_ids" widget="many2many_tags"
+                                           readonly="1"/>
+                                </group>
+                                <group string="Portal Login">
+                                    <p>
+                                        Send an invitation e-mail to the patient so they can
+                                        create their own login and view their personal and
+                                        medical records through the Odoo web portal.
+                                    </p>
+                                    <button name="action_create_portal_user" type="object"
+                                            string="Create Login Credentials &amp; Send Invitation"
+                                            class="btn-primary"
+                                            confirm="An e-mail invitation will be sent to the patient. Continue?"/>
+                                </group>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
             </form>
@@ -185,11 +273,20 @@
                 <filter string="Active" name="active" domain="[('active','=',True)]"/>
                 <filter string="Inactive" name="inactive" domain="[('active','=',False)]"/>
                 <separator/>
+                <filter string="Web Intake Pending Review" name="web_intake_pending"
+                        domain="[('source','=','web_intake'),('intake_status','=','pending_review')]"
+                        help="Online intake forms waiting to be processed"/>
+                <filter string="Web Intake Processed" name="web_intake_processed"
+                        domain="[('source','=','web_intake'),('intake_status','=','processed')]"/>
+                <separator/>
                 <filter string="Male" name="male" domain="[('sex','=','male')]"/>
                 <filter string="Female" name="female" domain="[('sex','=','female')]"/>
                 <group name="group_by">
                     <filter string="Sex" name="group_sex" domain="[]" context="{'group_by':'sex'}"/>
                     <filter string="Age" name="group_age" domain="[]" context="{'group_by':'age'}"/>
+                    <filter string="Source" name="group_source" domain="[]" context="{'group_by':'source'}"/>
+                    <filter string="Intake Status" name="group_intake_status" domain="[]" context="{'group_by':'intake_status'}"/>
+                    <filter string="Barangay" name="group_barangay" domain="[]" context="{'group_by':'barangay'}"/>
                 </group>
             </search>
         </field>
@@ -207,6 +304,25 @@
             <p>
                 Manage dental patient records including personal information,
                 contact details, and medical history.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_dental_web_intake" model="ir.actions.act_window">
+        <field name="name">Web Intake Requests</field>
+        <field name="res_model">dental.patient</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('source','=','web_intake')]</field>
+        <field name="search_view_id" ref="view_dental_patient_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No online intake submissions yet
+            </p>
+            <p>
+                Patients who fill the public intake form at <i>/patient-intake</i>
+                appear here with intake status <b>Pending Review</b>. Use the
+                <b>Web Intake Pending Review</b> filter to work through the queue,
+                then mark each patient as processed.
             </p>
         </field>
     </record>

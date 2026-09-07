@@ -13,3 +13,11 @@ access_dental_tooth_surface_manager,dental.tooth.surface manager,model_dental_to
 access_dental_tooth_surface_assistant,dental.tooth.surface assistant,model_dental_tooth_surface,group_dental_assistant,1,1,1,0
 access_dental_condition_manager,dental.condition manager,model_dental_condition,group_dental_manager,1,1,1,1
 access_dental_condition_assistant,dental.condition assistant,model_dental_condition,group_dental_assistant,1,1,1,0
+access_dental_service_manager,dental.service manager,model_dental_service,group_dental_manager,1,1,1,1
+access_dental_service_assistant,dental.service assistant,model_dental_service,group_dental_assistant,1,1,1,0
+access_dental_visit_manager,dental.visit manager,model_dental_visit,group_dental_manager,1,1,1,1
+access_dental_visit_assistant,dental.visit assistant,model_dental_visit,group_dental_assistant,1,1,1,0
+access_dental_clinical_finding_manager,dental.clinical.finding manager,model_dental_clinical_finding,group_dental_manager,1,1,1,1
+access_dental_clinical_finding_assistant,dental.clinical.finding assistant,model_dental_clinical_finding,group_dental_assistant,1,1,1,0
+access_report_oral_health_wizard_manager,report.oral.health.wizard manager,model_report_oral_health_wizard,group_dental_manager,1,1,1,1
+access_report_oral_health_wizard_assistant,report.oral.health.wizard assistant,model_report_oral_health_wizard,group_dental_assistant,1,1,1,1

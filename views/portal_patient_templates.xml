@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_my_home" name="My Dental Records" inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="patient">
+                <t t-call="portal.portal_docs_entry">
+                    <!-- <t t-set="icon" t-value="'/portal/static/src/img/portal-addresses.svg'"/> -->
+                    <t t-set="icon" t-value="'/obbs_dental/static/src/img/books.svg'"/>
+                    <t t-set="title">My Dental Records</t>
+                    <t t-set="text">View your dental records</t>
+                    <t t-set="url" t-value="'/my/patient'"/>
+                    <t t-set="placeholder_count" t-value="'patient_count'"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/obbs_dental/static/src/img/general.svg'"/>
+                    <t t-set="title">My Medical History</t>
+                    <t t-set="text">View your medical history and health information</t>
+                    <t t-set="url" t-value="'/my/medical_history'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/obbs_dental/static/src/img/folder.svg'"/>
+                    <t t-set="title">My Dental History</t>
+                    <t t-set="text">View your visits, treatments and dental records</t>
+                    <t t-set="url" t-value="'/my/dental_history'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/obbs_dental/static/src/img/tasks.svg'"/>
+                    <t t-set="title">My Dental Chart</t>
+                    <t t-set="text">View the condition of each tooth on your dental chart</t>
+                    <t t-set="url" t-value="'/my/dental_chart'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_patient_overview" name="My Dental Records — Overview">
+        <t t-call="portal.portal_layout">
+            <t t-if="not patient">
+                <div class="alert alert-info" role="alert">
+                    No dental records were found for your account. Please contact the clinic for assistance.
+                </div>
+                <a href="/my/home" class="btn btn-primary">Back to my dashboard</a>
+            </t>
+            <t t-else="">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="mb-0">My Dental Records</h3>
+                    <span class="badge text-bg-light border text-muted" t-out="patient.patient_number"/>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fa fa-user me-1"/> Personal Information</div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-5">Full name</dt><dd class="col-7" t-out="patient.display_name"/>
+                                    <dt class="col-5">Sex</dt><dd class="col-7" t-esc="patient.sex or ''"/>
+                                    <dt class="col-5">Age</dt><dd class="col-7" t-out="patient.age"/>
+                                    <dt class="col-5">Birth date</dt><dd class="col-7" t-out="patient.birthdate"/>
+                                    <dt class="col-5">Blood type</dt><dd class="col-7" t-esc="patient.blood_type or ''"/>
+                                    <dt class="col-5">Nationality</dt><dd class="col-7" t-esc="patient.nationality or ''"/>
+                                    <dt class="col-5">Religion</dt><dd class="col-7" t-esc="patient.religion or ''"/>
+                                    <dt class="col-5">Occupation</dt><dd class="col-7" t-esc="patient.occupation or ''"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fa fa-phone me-1"/> Contact &amp; Address</div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-5">Mobile number</dt><dd class="col-7" t-esc="patient.mobile or ''"/>
+                                    <dt class="col-5">Email</dt><dd class="col-7" t-esc="patient.email or ''"/>
+                                    <dt class="col-5">Home address</dt><dd class="col-7" t-out="patient.home_address or ''"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fa fa-shield me-1"/> Insurance &amp; Emergency</div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-5">Dental insurance</dt><dd class="col-7" t-esc="patient.dental_insurance or ''"/>
+                                    <dt class="col-5">Guardian</dt><dd class="col-7" t-esc="patient.guardian or ''"/>
+                                    <dt class="col-5">Emergency contact</dt><dd class="col-7" t-esc="patient.emergency_contact or ''"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_dental_chart" name="My Dental Chart">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">My Dental Chart</h3>
+                <a href="/my/patient" class="btn btn-link me-1"><i class="fa fa-arrow-left me-1"/> Back to my records</a>
+            </div>
+            <t t-if="not chart">
+                <div class="alert alert-info" role="alert">
+                    No dental chart is on file for your account.
+                </div>
+            </t>
+            <t t-else="">
+                <div class="o_dental_chart"
+                     style="width: 100%; min-width: 100%; overflow: visible; padding: 16px; background: #f5f5f5; border-radius: 8px; box-sizing: border-box;">
+                    <svg t-att-viewBox="chart['viewbox']" xmlns="http://www.w3.org/2000/svg"
+                         width="100%" height="auto">
+                        <line t-att-x1="chart['midline_x']" y1="0" t-att-x2="chart['midline_x']"
+                              t-att-y2="chart['viewbox_height']" style="stroke: #ccc; stroke-width: 1; stroke-dasharray: 4, 4;"/>
+                        <text t-att-x="chart['midline_x']" y="16" text-anchor="middle"
+                              style="fill: #333; font-size: 11px; font-weight: 600;">Pediatric</text>
+                        <text t-att-x="chart['midline_x']" y="72" text-anchor="middle"
+                              style="fill: #333; font-size: 11px; font-weight: 600;">Upper</text>
+                        <text t-att-x="chart['midline_x']" y="150" text-anchor="middle"
+                              style="fill: #333; font-size: 11px; font-weight: 600;">Lower</text>
+                        <text t-att-x="chart['midline_x']" y="228" text-anchor="middle"
+                              style="fill: #333; font-size: 11px; font-weight: 600;">Pediatric</text>
+
+                        <t t-foreach="chart['teeth']" t-as="t">
+                            <g t-att-transform="t['transform']">
+                                <circle cx="0" cy="0" r="16" fill="none" stroke="#888" stroke-width="1.5"/>
+                                <t t-foreach="t['surfaces']" t-as="s">
+                                    <path t-att-d="s['path']" t-att-fill="s['color']"
+                                          stroke="#666" stroke-width="2.5" stroke-linejoin="round"/>
+                                </t>
+                                <text x="0" y="22" text-anchor="middle"
+                                      style="fill: #666; font-size: 8px; font-family: monospace; pointer-events: none; user-select: none;"
+                                      t-esc="t['number']"/>
+                            </g>
+                        </t>
+                    </svg>
+
+                    <div t-if="chart['legend']" style="display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; font-size: 12px;">
+                        <t t-foreach="chart['legend']" t-as="item">
+                            <span style="display: inline-flex; align-items: center; gap: 5px;">
+                                <span t-att-style="'width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); background-color: ' + item['color']"
+                                      style="display: inline-block;"></span>
+                                <t t-esc="item['label']"/>
+                            </span>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_dental_history" name="My Dental History">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">My Dental History</h3>
+                <a href="/my/patient" class="btn btn-link me-1"><i class="fa fa-arrow-left me-1"/> Back to my records</a>
+            </div>
+
+            <t t-if="not visits and not entries">
+                <div class="alert alert-info" role="alert">
+                    No dental history records are on file for your account.
+                </div>
+            </t>
+
+            <t t-if="visits">
+                <h5 class="mt-2 mb-3"><i class="fa fa-calendar me-1"/> Visits
+                    <span class="badge text-bg-light border text-muted" t-out="len(visits)"/>
+                </h5>
+                <div class="accordion mb-4" id="visitsAccordion">
+                    <t t-foreach="visits" t-as="visit">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        t-attf-data-bs-target="#visitBody-#{visit.id}">
+                                    <span t-out="visit.display_name"/>
+                                    <span t-if="visit.dentist_id" class="text-muted ms-2 small">
+                                        <i class="fa fa-user-md me-1"/>
+                                        <t t-out="visit.dentist_id.display_name"/>
+                                    </span>
+                                </button>
+                            </h2>
+                            <div t-attf-id="visitBody-#{visit.id}" class="accordion-collapse collapse" data-bs-parent="#visitsAccordion">
+                                <div class="accordion-body">
+                                    <t t-if="visit.service_ids">
+                                        <h6 class="text-muted mb-2">Services rendered</h6>
+                                        <div class="d-flex flex-wrap gap-2 mb-3">
+                                            <t t-foreach="visit.service_ids" t-as="svc">
+                                                <span class="badge text-bg-primary" t-esc="svc.display_name"/>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="visit.referred or visit.counseling or visit.toothbrush_drill or visit.ofc_oral_exam or visit.ofc_rehabilitation">
+                                        <h6 class="text-muted mb-2">Indicators</h6>
+                                        <div class="d-flex flex-wrap gap-2 mb-3">
+                                            <t t-if="visit.referred"><span class="badge text-bg-warning">Referred</span></t>
+                                            <t t-if="visit.counseling"><span class="badge text-bg-success">Counseling / Education</span></t>
+                                            <t t-if="visit.toothbrush_drill"><span class="badge text-bg-success">Toothbrushing Drill (Under-6)</span></t>
+                                            <t t-if="visit.ofc_oral_exam"><span class="badge text-bg-info">OFC upon oral examination</span></t>
+                                            <t t-if="visit.ofc_rehabilitation"><span class="badge text-bg-info">OFC upon complete oral rehabilitation</span></t>
+                                        </div>
+                                    </t>
+                                    <t t-if="visit.notes">
+                                        <h6 class="text-muted mb-2">Notes</h6>
+                                        <p class="mb-0" t-out="visit.notes"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="entries">
+                <h5 class="mt-2 mb-3"><i class="fa fa-list me-1"/> Dental Treatment Records
+                    <span class="badge text-bg-light border text-muted" t-out="len(entries)"/>
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Tooth</th>
+                                <th>Condition</th>
+                                <th>Treatment</th>
+                                <th>Notes</th>
+                                <th>Dentist</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="entries" t-as="entry">
+                                <tr>
+                                    <td t-out="entry.date"/>
+                                    <td><strong t-out="entry.tooth_number"/></td>
+                                    <td>
+                                        <span t-att-style="'background-color: ' + (cond_colors.get(entry.condition) or '#6c757d') + '; color: #fff'"
+                                              class="badge" t-out="cond_labels.get(entry.condition) or entry.condition"/>
+                                    </td>
+                                    <td t-esc="entry.treatment or ''"/>
+                                    <td t-esc="entry.notes or ''"/>
+                                    <td t-esc="entry.dentist_id.display_name or ''"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_medical_history" name="My Medical History">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">My Medical History</h3>
+                <a href="/my/patient" class="btn btn-link me-1"><i class="fa fa-arrow-left me-1"/> Back to my records</a>
+            </div>
+            <t t-if="not records">
+                <div class="alert alert-info" role="alert">
+                    No medical history records are on file for your account.
+                </div>
+            </t>
+            <t t-else="">
+                <div class="accordion" id="medHistoryAccordion">
+                    <t t-foreach="records" t-as="rec">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" t-attf-id="medHdr-#{rec.id}">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        t-attf-data-bs-target="#medBody-#{rec.id}"
+                                        t-attf-aria-controls="medBody-#{rec.id}" t-attf-aria-labelledby="medHdr-#{rec.id}">
+                                    <span t-out="rec.display_name"/>
+                                    <span t-if="rec.version &gt; 1" class="badge text-bg-secondary ms-2">v<span t-out="rec.version"/></span>
+                                </button>
+                            </h2>
+                            <div t-attf-id="medBody-#{rec.id}" class="accordion-collapse collapse" t-attf-aria-labelledby="medHdr-#{rec.id}" data-bs-parent="#medHistoryAccordion">
+                                <div class="accordion-body">
+                                    <dl class="row mb-3">
+                                        <dt class="col-sm-3">General health</dt><dd class="col-sm-9" t-out="rec.general_health or ''"/>
+                                        <dt class="col-sm-3">Current medication</dt><dd class="col-sm-9" t-out="rec.current_medication or ''"/>
+                                        <dt class="col-sm-3">Previous surgeries</dt><dd class="col-sm-9" t-out="rec.previous_surgeries or ''"/>
+                                        <dt class="col-sm-3">Hospitalization</dt><dd class="col-sm-9" t-out="rec.hospitalization or ''"/>
+                                        <dt class="col-sm-3">Allergies</dt><dd class="col-sm-9" t-out="rec.allergies or ''"/>
+                                        <dt class="col-sm-3">Medical conditions</dt><dd class="col-sm-9" t-out="rec.medical_conditions or ''"/>
+                                        <dt class="col-sm-3">Notes</dt><dd class="col-sm-9" t-out="rec.notes or ''"/>
+                                    </dl>
+                                    <h6 class="text-muted mb-2">Health indicators</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <t t-foreach="options" t-as="opt">
+                                            <span t-att-class="'badge ' + ('text-bg-danger' if rec[opt] else 'text-bg-light border text-muted')"
+                                                  t-esc="options[opt]"/>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

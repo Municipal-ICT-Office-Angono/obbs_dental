@@ -5,3 +5,6 @@ from . import dental_consent
 from . import dental_tooth
 from . import dental_tooth_surface
 from . import dental_condition
+from . import dental_service
+from . import dental_visit
+from . import dental_clinical_finding

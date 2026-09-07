@@ -13,22 +13,29 @@ Electronic Dental Record (EDR).
     'website': 'https://obbs.com',
 
     'category': 'Medical',
-    'version': '1.1.0',
+    'version': '1.5.0',
 
-    'depends': ['base', 'contacts', 'mail'],
+    'depends': ['base', 'contacts', 'mail', 'portal', 'auth_signup', 'website'],
 
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
         'data/dental_condition_data.xml',
+        'data/dental_service_data.xml',
         'views/dental_patient_views.xml',
         'views/dental_medical_history_views.xml',
         'views/dental_history_views.xml',
         'views/dental_consent_views.xml',
         'views/dental_tooth_views.xml',
         'views/dental_condition_views.xml',
+        'views/dental_service_views.xml',
+        'views/dental_visit_views.xml',
+        'views/dental_clinical_finding_views.xml',
+        'report/oral_health_wizard_views.xml',
         'views/menus.xml',
+        'views/portal_patient_templates.xml',
+        'views/patient_intake_templates.xml',
     ],
 
     'assets': {
@@ -38,6 +45,9 @@ Electronic Dental Record (EDR).
             'obbs_dental/static/src/js/odontogram.js',
             'obbs_dental/static/src/xml/**/*',
             'obbs_dental/static/src/scss/dental_chart.scss',
+        ],
+        'web.assets_frontend': [
+            'obbs_dental/static/src/js/patient_intake.js',
         ],
     },
 

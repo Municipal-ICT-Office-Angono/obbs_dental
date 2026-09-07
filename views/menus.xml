@@ -11,9 +11,44 @@
               sequence="10"
               action="action_dental_patient"/>
 
+    <menuitem id="menu_dental_web_intake"
+              name="Web Intake Requests"
+              parent="menu_dental_root"
+              sequence="12"
+              action="action_dental_web_intake"/>
+
+    <menuitem id="menu_dental_visits"
+              name="Visits"
+              parent="menu_dental_root"
+              sequence="15"
+              action="action_dental_visit"/>
+
+    <menuitem id="menu_dental_clinical_findings"
+              name="Clinical Findings"
+              parent="menu_dental_root"
+              sequence="16"
+              action="action_dental_clinical_finding"/>
+
     <menuitem id="menu_dental_conditions"
               name="Conditions"
               parent="menu_dental_root"
               sequence="20"
               action="action_dental_condition"/>
+
+    <menuitem id="menu_dental_services"
+              name="Services"
+              parent="menu_dental_root"
+              sequence="25"
+              action="action_dental_service"/>
+
+    <menuitem id="menu_dental_reports"
+              name="Reports"
+              parent="menu_dental_root"
+              sequence="30"/>
+
+    <menuitem id="menu_oral_health_report"
+              name="Oral Health Form 2"
+              parent="menu_dental_reports"
+              sequence="10"
+              action="action_oral_health_wizard"/>
 </odoo>
