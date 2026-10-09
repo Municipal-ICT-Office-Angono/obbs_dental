@@ -1,0 +1,705 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="intake_mobile_page" name="Dental Patient Intake (iPad / iOS 12)">
+        <html lang="en">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <title>Dental Patient Intake</title>
+                <style><![CDATA[
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    html { -webkit-text-size-adjust: 100%; }
+                    body {
+                        font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+                        background: #eef2f7; color: #1a2530; line-height: 1.45;
+                        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+                    }
+                    input, select, textarea, button { font: inherit; color: inherit; }
+                    input, select, textarea { -webkit-user-select: text; user-select: text; }
+                    .page { max-width: 680px; margin: 0 auto; padding: 14px 12px 90px; }
+                    .header { text-align: center; padding: 8px 6px 10px; }
+                    .header .gov { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #64748b; font-weight: 600; }
+                    .header h1 { font-size: 21px; margin: 3px 0 1px; color: #0b2a4a; }
+                    .header p { font-size: 13px; color: #64748b; }
+
+                    .steps { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; list-style: none; margin: 14px 0 12px; }
+                    .steps li { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; width: 20%; text-align: center; font-size: 10px; color: #64748b; font-weight: 600; }
+                    .steps .dot { width: 30px; height: 30px; border-radius: 50%; background: #dde3ea; color: #64748b; display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; font-size: 13px; margin-bottom: 3px; }
+                    .steps li.on { color: #0b7cff; }
+                    .steps li.on .dot { background: #0b7cff; color: #fff; }
+                    .steps li.done { color: #12a150; }
+                    .steps li.done .dot { background: #12a150; color: #fff; }
+
+                    .errors { display: none; background: #fdecec; border: 1px solid #f5b6b6; color: #8c1d1d; border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-bottom: 12px; }
+                    .errors ul { margin: 6px 0 0 18px; }
+                    .draftbar { display: none; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; background: #fff7e0; border: 1px solid #f5d789; color: #7a5b00; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+                    .draftbar button { border: 0; background: none; color: #0b7cff; font-weight: 600; font-size: 13px; min-height: 40px; }
+
+                    fieldset.step { display: none; border: 0; margin: 0; padding: 0; }
+                    fieldset.step.on { display: block; }
+                    .card { background: #fff; border: 1px solid #dde3ea; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+                    .card h2 { font-size: 15px; margin-bottom: 12px; color: #0b2a4a; }
+                    .card h3 { font-size: 13px; margin: 14px 0 8px; color: #334155; }
+
+                    .field { margin-bottom: 12px; }
+                    label.lbl { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px; }
+                    .req::after { content: " *"; color: #d62828; }
+                    input[type=text], input[type=tel], input[type=email], input[type=date], select, textarea {
+                        width: 100%; padding: 12px; font-size: 16px; border: 1px solid #c6cfdb; border-radius: 10px; background: #fff;
+                        -webkit-appearance: none; appearance: none;
+                    }
+                    input[type=date] { min-height: 46px; }
+                    .hint { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+                    .chkgroup { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+                    .chkcol { -webkit-flex: 1 1 165px; flex: 1 1 165px; max-width: 100%; }
+                    label.check { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; margin-bottom: 8px; font-size: 15px; font-weight: 500; padding-right: 10px; }
+                    label.check input { width: 26px; height: 26px; -webkit-flex: 0 0 auto; flex: 0 0 auto; margin: -1px 10px 0 0; }
+
+                    .panel { background: #f4f7fb; border: 1px solid #dde3ea; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #334155; margin-bottom: 12px; }
+                    .panel p { margin-bottom: 8px; }
+                    .panel p:last-child { margin-bottom: 0; }
+
+                    .sigpad { background: #fff; border: 1px solid #c6cfdb; border-radius: 10px; overflow: hidden; }
+                    .sigpad canvas { display: block; width: 100%; height: auto; background: #fff; touch-action: none; }
+                    .sigbar { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; margin-top: 8px; font-size: 12px; color: #64748b; }
+                    .sigbar button { border: 1px solid #c6cfdb; background: #fff; color: #334155; border-radius: 8px; padding: 8px 14px; font-size: 13px; min-height: 40px; }
+
+                    .nav { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; margin-top: 14px; }
+                    .btn { min-height: 50px; padding: 0 24px; font-size: 16px; font-weight: 700; border: 0; border-radius: 10px; -webkit-appearance: none; }
+                    .btn-primary { background: #0b7cff; color: #fff; }
+                    .btn-secondary { background: #e2e8f0; color: #334155; }
+                    .btn-success { background: #12a150; color: #fff; }
+                    .btn:disabled { opacity: .5; }
+                    .btn-hidden { display: none; }
+
+                    .thanks { display: none; text-align: center; padding-top: 46px; }
+                    .thanks .tick { font-size: 64px; color: #12a150; margin-bottom: 8px; }
+                    .thanks h2 { color: #0b2a4a; margin-bottom: 8px; }
+                    .thanks .ref { font-size: 30px; font-weight: 800; color: #0b7cff; margin: 12px 0; }
+                    .thanks .muted { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+
+                    .hp { position: absolute; left: -9999px; width: 1px; height: 1px; }
+                ]]></style>
+            </head>
+            <body>
+                <div class="page">
+                    <div class="header">
+                        <div class="gov">Republic of the Philippines &#8226; Province of Rizal</div>
+                        <h1>Municipal Health Office &#8212; Angono</h1>
+                        <p>Individual Treatment Record &#8212; Online Patient Intake</p>
+                    </div>
+
+                    <div class="errors" id="obbs_errors" role="alert">
+                        <strong>Please fix the following before submitting:</strong>
+                        <ul id="obbs_errors_list"></ul>
+                    </div>
+
+                    <div class="draftbar" id="obbs_draft_bar">
+                        <span>Resuming a saved draft from this device.</span>
+                        <button type="button" id="obbs_draft_clear">Clear</button>
+                    </div>
+
+                    <form id="obbs_intake_form" novalidate="novalidate" autocomplete="on">
+                        <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"/>
+
+                        <ol class="steps">
+                            <li data-step="1"><span class="dot">1</span><span>Personal</span></li>
+                            <li data-step="2"><span class="dot">2</span><span>Dental</span></li>
+                            <li data-step="3"><span class="dot">3</span><span>Medical</span></li>
+                            <li data-step="4"><span class="dot">4</span><span>Allergies</span></li>
+                            <li data-step="5"><span class="dot">5</span><span>Consent</span></li>
+                        </ol>
+
+                        <fieldset class="step on">
+                            <div class="card">
+                                <h2>Personal Information</h2>
+                                <div class="field">
+                                    <label class="lbl req" for="f_first_name">First Name</label>
+                                    <input type="text" id="f_first_name" name="first_name" placeholder="e.g. Maria" required="1" autocomplete="given-name"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_middle_name">Middle Name</label>
+                                    <input type="text" id="f_middle_name" name="middle_name" placeholder="e.g. Santos" autocomplete="additional-name"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_last_name">Last Name</label>
+                                    <input type="text" id="f_last_name" name="last_name" placeholder="e.g. Reyes" required="1" autocomplete="family-name"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_birthdate">Date of Birth</label>
+                                    <input type="date" id="f_birthdate" name="birthdate" required="1" max="2030-12-31"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_sex">Sex</label>
+                                    <select id="f_sex" name="sex" required="1">
+                                        <option value="">Select</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_mobile">Contact Number</label>
+                                    <input type="tel" id="f_mobile" name="mobile" placeholder="e.g. 09171234567" required="1" autocomplete="tel" autocapitalize="off" autocorrect="off"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_email">E-mail Address</label>
+                                    <input type="email" id="f_email" name="email" placeholder="e.g. maria.reyes@email.com" autocomplete="email" autocapitalize="off" autocorrect="off"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_barangay">Barangay</label>
+                                    <input type="text" id="f_barangay" name="barangay" placeholder="e.g. San Isidro" required="1"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req" for="f_address">Complete Address</label>
+                                    <input type="text" id="f_address" name="address" placeholder="House no., street, sitio / purok, barangay, Angono, Rizal" required="1" autocomplete="street-address"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_occupation">Occupation</label>
+                                    <input type="text" id="f_occupation" name="occupation" placeholder="e.g. Teacher" autocomplete="organization-title"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_philhealth">PhilHealth Number</label>
+                                    <input type="text" id="f_philhealth" name="philhealth_number" placeholder="e.g. 12-345678901-2" autocapitalize="off" autocorrect="off"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_guardian">Parent / Guardian</label>
+                                    <input type="text" id="f_guardian" name="guardian" placeholder="Required for minors under 18"/>
+                                </div>
+
+                                <h3>Other Patient Information <span class="hint">(check all that apply)</span></h3>
+                                <div class="chkgroup">
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="p4s_recipient"/><span>4P's Recipient</span></label>
+                                        <label class="check"><input type="checkbox" name="p4s_beneficiary"/><span>4P's Beneficiary</span></label>
+                                        <label class="check"><input type="checkbox" name="ip"/><span>Indigenous People (IP)</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="senior"/><span>Senior Citizen</span></label>
+                                        <label class="check"><input type="checkbox" name="pwd"/><span>Person with Disability (PWD)</span></label>
+                                        <label class="check"><input type="checkbox" name="solo_parent"/><span>Solo Parent</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step" disabled="disabled">
+                            <div class="card">
+                                <h2>Dental History</h2>
+                                <div class="field">
+                                    <label class="lbl" for="f_last_visit">Most recent dental visit</label>
+                                    <input type="date" id="f_last_visit" name="last_dental_visit" max="2030-12-31"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_visit_freq">How often do you visit the dentist?</label>
+                                    <select id="f_visit_freq" name="visit_frequency">
+                                        <option value="">Select</option>
+                                        <option value="twice_year">At least twice a year</option>
+                                        <option value="once_year">Once a year</option>
+                                        <option value="never">Never</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_ortho">History / current orthodontic treatment</label>
+                                    <input type="text" id="f_ortho" name="orthodontic_history" placeholder="e.g. Braces worn in 2021, currently wearing retainers"/>
+                                </div>
+                                <label class="check"><input type="checkbox" name="prosthesis"/><span>Do you have a dental prosthesis? (dentures / bridge / crown)</span></label>
+                                <div class="field">
+                                    <label class="lbl" for="f_prosthesis_since">If yes, since when?</label>
+                                    <input type="text" id="f_prosthesis_since" name="prosthesis_since" placeholder="e.g. Since 2020"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_referred_by">Referred by</label>
+                                    <input type="text" id="f_referred_by" name="referred_by" placeholder="e.g. Barangay health worker, name of referrer"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_referred_reason">Reason for referral (if any)</label>
+                                    <input type="text" id="f_referred_reason" name="referred_reason" placeholder="e.g. Tooth pain"/>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step" disabled="disabled">
+                            <div class="card">
+                                <h2>Medical History</h2>
+                                <label class="check"><input type="checkbox" name="under_treatment"/><span>Are you under medical treatment now?</span></label>
+                                <div class="field">
+                                    <input type="text" name="under_treatment_notes" placeholder="If so, what condition is being treated?"/>
+                                </div>
+                                <label class="check"><input type="checkbox" name="serious_illness"/><span>Have you ever had a serious illness or surgical operation?</span></label>
+                                <div class="field">
+                                    <input type="text" name="serious_illness_notes" placeholder="If so, what illness or operation?"/>
+                                </div>
+                                <label class="check"><input type="checkbox" name="was_hospitalized"/><span>Have you ever been hospitalized?</span></label>
+                                <div class="field">
+                                    <input type="text" name="hospitalized_notes" placeholder="If so, when &amp; why?"/>
+                                </div>
+                                <label class="check"><input type="checkbox" name="taking_medication"/><span>Are you taking any prescription / non-prescription medicine?</span></label>
+                                <div class="field">
+                                    <input type="text" name="medication_notes" placeholder="If so, please specify"/>
+                                </div>
+                                <div class="chkgroup">
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="tobacco"/><span>Do you use tobacco products?</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="alcohol_drugs"/><span>Do you use alcohol or other dangerous drugs?</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step" disabled="disabled">
+                            <div class="card">
+                                <h2>Allergies &amp; Conditions</h2>
+                                <h3>Are you allergic to any of the following?</h3>
+                                <div class="chkgroup">
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="allergy_anesthetics"/><span>Local anesthetics</span></label>
+                                        <label class="check"><input type="checkbox" name="allergy_penicillin"/><span>Penicillin / Antibiotics</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="allergy_aspirin"/><span>Aspirin</span></label>
+                                        <label class="check"><input type="checkbox" name="allergy_sulfa"/><span>Sulfa drugs</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="allergy_latex"/><span>Latex</span></label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <input type="text" name="allergy_others" placeholder="Others"/>
+                                </div>
+
+                                <div class="panel">
+                                    <p><strong>For women only:</strong> are you pregnant (if so, indicate months), nursing, or taking birth control pills?</p>
+                                </div>
+                                <div class="chkgroup">
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="pregnant"/><span>Pregnant</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="nursing"/><span>Nursing</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="birth_control"/><span>Taking birth control pills</span></label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl" for="f_preg_months">If pregnant, months:</label>
+                                    <input type="text" id="f_preg_months" name="pregnancy_months" placeholder="e.g. 4 months"/>
+                                </div>
+
+                                <h3>Do you have or have you had any of the following? <span class="hint">(check all that apply)</span></h3>
+                                <div class="chkgroup">
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="cond_high_bp"/><span>High blood pressure</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_low_bp"/><span>Low blood pressure</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_diabetes"/><span>Diabetes</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_chest_pain"/><span>Chest pain</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_heart_disease"/><span>Heart disease</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_heart_attack"/><span>Heart attack</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="cond_heart_murmur"/><span>Heart murmur</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_heart_surgery"/><span>Heart surgery</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_stroke"/><span>Stroke</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_respiratory"/><span>Respiratory problem</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_tb"/><span>Tuberculosis</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_kidney"/><span>Kidney disease</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="cond_asthma"/><span>Asthma</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_thyroid"/><span>Thyroid problem</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_fainting"/><span>Fainting / Seizure</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_aids"/><span>AIDS / HIV</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_epilepsy"/><span>Epilepsy / Convulsion</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_hepatitis"/><span>Hepatitis / Liver disease</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_stomach"/><span>Stomach troubles / Ulcers</span></label>
+                                    </div>
+                                    <div class="chkcol">
+                                        <label class="check"><input type="checkbox" name="cond_cancer"/><span>Cancer / Tumor</span></label>
+                                        <label class="check"><input type="checkbox" name="cond_arthritis"/><span>Arthritis</span></label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <input type="text" name="cond_others" placeholder="Others (please specify)"/>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step" disabled="disabled">
+                            <div class="card">
+                                <h2>Consent &amp; Waiver</h2>
+                                <h3>Data Privacy Consent</h3>
+                                <div class="panel">
+                                    <p>Pinapatunayan ko na ang lahat ng impormasyong ibinigay ay tama at totoo. Pinahihintulutan ko ang pagproseso ng aking mga personal na datos, kabilang na ang resulta ng aking dental na operasyon at pagsusuri na makukuha mula sa akin ng pasilidad na ito. Gayundin, ang naturang pasilidad ay pinahihintulutan ko na gamitin at iproseso ang naturang datos o impormasyon para sa anumang kadahilanang may kaugnayan sa aking dental na operasyon at pag susuri.</p>
+                                    <p>Pinagtitibay ko ang aking Karapatan na maabisuhan, tumutol sa pagproseso, magkaroon ng kopya at Maitama, ipasuspinde o bawiin ang aking personal na datos at makatanggap ng danyos kung sakaling may pinsala, alinsunod sa mga probisyon ng Republic Act No. 10173 ang Data Privacy Act of 2012 at ang mga regulasyon kaugnay nito.</p>
+                                </div>
+                                <label class="check"><input type="checkbox" name="consent_agree" required="1"/><span>I agree to the Data Privacy Consent above. <strong style="color:#d62828;">*</strong></span></label>
+                                <div class="field">
+                                    <label class="lbl req" for="f_consent_name">Full Name on Consent</label>
+                                    <input type="text" id="f_consent_name" name="consent_name" placeholder="Buong pangalan" required="1" autocomplete="name"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req">Signature</label>
+                                    <div class="sigpad">
+                                        <canvas id="obbs_sig_consent" width="600" height="200"></canvas>
+                                    </div>
+                                    <div class="sigbar">
+                                        <button type="button" id="obbs_sig_clear_consent">Clear</button>
+                                        <span>Draw your signature using your finger or stylus</span>
+                                    </div>
+                                    <input type="hidden" name="consent_signature"/>
+                                </div>
+
+                                <h3>Waiver</h3>
+                                <div class="panel">
+                                    <p>Ako ay nasa mabuting kalusugan (i.e. walang sakit sa puso, hypertension, diabetes, pagdurugo, AIDS, sakit sa buto o iba pang karamdaman) at maaring magpabunot ng ngipin ng walang peligro sa akin. Ako ay nakapagkonsulta na sa doctor at walang pagbabawal sa akin na bunutan ng ngipin.</p>
+                                    <p>Ako ay sumasang-ayon na kung mayroong mali o huwad na impormasyon sa anumang aking ipinapahayag na walang magiging pananagutan ang dentistang kokonsultahin ko at magbubunot ng aking ngipin. Hindi ako magsasampa ng anumang reklamo o demanda laban sa sino man sa kanila sa korte o kung saang ahensyang pamahalaan o organisasyon kaugnay sa aking pagpapabunot ng ngipin o sa anumang magiging resulta nito.</p>
+                                    <p>Susundin ko ang lahat ng magiging bilin ng aking dentista pagkatapos na ako ay bunutan at iinumin ko sa tamang paraan at tagal ang gamot na maaring ibigay o ireseta sa akin.</p>
+                                    <p>Naiintindihan ko ang salaysay na ito at malaya ko itong ginawa at nilagdaan.</p>
+                                </div>
+                                <label class="check"><input type="checkbox" name="waiver_agree" required="1"/><span>I agree to the Waiver above. <strong style="color:#d62828;">*</strong></span></label>
+                                <div class="field">
+                                    <label class="lbl req" for="f_waiver_name">Full Name on Waiver</label>
+                                    <input type="text" id="f_waiver_name" name="waiver_name" placeholder="Buong pangalan" required="1" autocomplete="name"/>
+                                </div>
+                                <div class="field">
+                                    <label class="lbl req">Signature</label>
+                                    <div class="sigpad">
+                                        <canvas id="obbs_sig_waiver" width="600" height="200"></canvas>
+                                    </div>
+                                    <div class="sigbar">
+                                        <button type="button" id="obbs_sig_clear_waiver">Clear</button>
+                                        <span>Draw your signature using your finger or stylus</span>
+                                    </div>
+                                    <input type="hidden" name="waiver_signature"/>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <div class="nav">
+                            <button type="button" class="btn btn-secondary btn-hidden" id="obbs_prev">Back</button>
+                            <button type="button" class="btn btn-primary" id="obbs_next">Next</button>
+                            <button type="button" class="btn btn-success btn-hidden" id="obbs_submit">Submit Intake Form</button>
+                        </div>
+                    </form>
+
+                    <div class="thanks" id="obbs_thanks">
+                        <div class="tick">&#10004;</div>
+                        <h2>Your intake form has been received</h2>
+                        <div id="obbs_thanks_has" style="display:none;">
+                            <p class="muted">Thank you, <strong id="obbs_thanks_name"></strong>. Please note your patient reference number below and present a valid ID at the clinic on the day of your visit.</p>
+                            <div class="ref" id="obbs_thanks_ref"></div>
+                            <p class="muted">The clinic will brief you on your appointment schedule. All information you provided will only be used for your dental care and treatment records.</p>
+                        </div>
+                        <p class="muted">If you do not receive a confirmation, please retry submitting the form.</p>
+                        <button type="button" class="btn btn-primary" id="obbs_new_intake">New Patient Intake</button>
+                    </div>
+                </div>
+
+                <script><![CDATA[
+(function () {
+    'use strict';
+
+    var DRAFT_KEY = 'obbs_intake_draft_v1';
+    var form = document.getElementById('obbs_intake_form');
+    var steps = [].slice.call(form.querySelectorAll('fieldset.step'));
+    var inds = [].slice.call(document.querySelectorAll('.steps li'));
+    var nextBtn = document.getElementById('obbs_next');
+    var prevBtn = document.getElementById('obbs_prev');
+    var submitBtn = document.getElementById('obbs_submit');
+    var errorsBox = document.getElementById('obbs_errors');
+    var errorsList = document.getElementById('obbs_errors_list');
+    var index = 0;
+
+    function show(i) {
+        index = Math.max(0, Math.min(i, steps.length - 1));
+        for (var j = 0; j < steps.length; j++) {
+            steps[j].classList.toggle('on', j === index);
+            steps[j].disabled = (j !== index);
+            inds[j].classList.toggle('on', j === index);
+            inds[j].classList.toggle('done', j < index);
+        }
+        nextBtn.classList.toggle('btn-hidden', index === steps.length - 1);
+        prevBtn.classList.toggle('btn-hidden', index === 0);
+        submitBtn.classList.toggle('btn-hidden', index !== steps.length - 1);
+        window.scrollTo(0, 0);
+    }
+
+    function validStep(i) {
+        if (steps[i].checkValidity()) { return true; }
+        steps[i].reportValidity();
+        return false;
+    }
+
+    function initSigPad(canvas, input, clearBtn) {
+        var ctx = canvas.getContext('2d');
+        var drawing = false;
+        var ink = false;
+        ctx.strokeStyle = '#1a2530';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        function placeholder() {
+            if (ink) { return; }
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#c9c9c9';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.08, canvas.height * 0.5);
+            ctx.lineTo(canvas.width * 0.92, canvas.height * 0.5);
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#9aa0a6';
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Sign here (finger / stylus)', canvas.width / 2, canvas.height / 2);
+        }
+
+        function toPos(clientX, clientY) {
+            var r = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - r.left) * (canvas.width / r.width),
+                y: (clientY - r.top) * (canvas.height / r.height)
+            };
+        }
+
+        function beginStroke(clientX, clientY) {
+            drawing = true;
+            ink = true;
+            var p = toPos(clientX, clientY);
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+        }
+
+        function continueStroke(clientX, clientY) {
+            if (!drawing) { return; }
+            var p = toPos(clientX, clientY);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+        }
+
+        function endStroke() { drawing = false; }
+
+        function mdown(e) {
+            e.preventDefault();
+            beginStroke(e.clientX, e.clientY);
+        }
+
+        function mmove(e) {
+            if (!drawing) { return; }
+            e.preventDefault();
+            continueStroke(e.clientX, e.clientY);
+        }
+
+        function tstart(e) {
+            e.preventDefault();
+            if (e.touches && e.touches.length) {
+                beginStroke(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }
+
+        function tmove(e) {
+            if (!drawing) { return; }
+            e.preventDefault();
+            if (e.touches && e.touches.length) {
+                continueStroke(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }
+
+        canvas.addEventListener('touchstart', tstart, {passive: false});
+        canvas.addEventListener('touchmove', tmove, {passive: false});
+        canvas.addEventListener('touchend', endStroke, {passive: false});
+        canvas.addEventListener('touchcancel', endStroke, {passive: false});
+        canvas.addEventListener('mousedown', mdown);
+        canvas.addEventListener('mousemove', mmove);
+        canvas.addEventListener('mouseup', endStroke);
+        canvas.addEventListener('mouseleave', endStroke);
+        canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                ctx.setLineDash([]);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ink = false;
+                input.value = '';
+                placeholder();
+            });
+        }
+
+        placeholder();
+
+        return {
+            hasInk: function () { return ink; },
+            dataURL: function () { return ink ? canvas.toDataURL('image/png') : ''; }
+        };
+    }
+
+    var consentCanvas = document.getElementById('obbs_sig_consent');
+    var waiverCanvas = document.getElementById('obbs_sig_waiver');
+    var consentInput = form.querySelector('input[name="consent_signature"]');
+    var waiverInput = form.querySelector('input[name="waiver_signature"]');
+    var sigConsent = initSigPad(consentCanvas, consentInput, document.getElementById('obbs_sig_clear_consent'));
+    var sigWaiver = initSigPad(waiverCanvas, waiverInput, document.getElementById('obbs_sig_clear_waiver'));
+
+    function collect() {
+        var out = {};
+        var els = form.querySelectorAll('input, select, textarea');
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (!el.name) { continue; }
+            if (el.type === 'checkbox') { out[el.name] = el.checked ? '1' : ''; }
+            else { out[el.name] = el.value; }
+        }
+        return out;
+    }
+
+    function saveDraft() {
+        var save = collect();
+        delete save.consent_signature;
+        delete save.waiver_signature;
+        try { localStorage.setItem(DRAFT_KEY, JSON.stringify(save)); } catch (e) {}
+    }
+
+    function restoreDraft() {
+        var raw = null;
+        try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { return; }
+        if (!raw) { return; }
+        var d = null;
+        try { d = JSON.parse(raw); } catch (e) { return; }
+        if (!d) { return; }
+        var any = false;
+        for (var k in d) {
+            if (!Object.prototype.hasOwnProperty.call(d, k)) { continue; }
+            var el = form.querySelector('[name="' + k + '"]');
+            if (!el) { continue; }
+            if (el.type === 'checkbox') { el.checked = (d[k] === '1' || d[k] === 'true' || d[k] === true); }
+            else { el.value = d[k]; }
+            any = true;
+        }
+        var bar = document.getElementById('obbs_draft_bar');
+        bar.style.display = 'flex';
+        if (!any) { bar.style.display = 'none'; }
+    }
+
+    function clearDraft() {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        window.location.reload();
+    }
+
+    form.addEventListener('input', saveDraft);
+    form.addEventListener('change', saveDraft);
+
+    nextBtn.addEventListener('click', function () {
+        if (!validStep(index)) { return; }
+        show(index + 1);
+    });
+
+    prevBtn.addEventListener('click', function () {
+        show(index - 1);
+    });
+
+    form.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') {
+            ev.preventDefault();
+            if (index === steps.length - 1) { doSubmit(); }
+            else { nextBtn.click(); }
+        }
+    });
+
+    function showErrors(errors, step) {
+        errorsList.innerHTML = '';
+        for (var i = 0; i < errors.length; i++) {
+            var li = document.createElement('li');
+            li.appendChild(document.createTextNode(errors[i].msg));
+            errorsList.appendChild(li);
+        }
+        errorsBox.style.display = 'block';
+        show(step - 1);
+        window.scrollTo(0, 0);
+    }
+
+    function doSubmit() {
+        if (index !== steps.length - 1) { show(steps.length - 1); }
+        if (!validStep(steps.length - 1)) { return; }
+        if (!sigConsent.hasInk() || !sigWaiver.hasInk()) {
+            showErrors([{step: 5, msg: 'Please draw your signature on both the Data Privacy Consent and the Waiver before submitting.'}], 5);
+            return;
+        }
+        consentInput.value = sigConsent.dataURL();
+        waiverInput.value = sigWaiver.dataURL();
+        var payload = collect();
+        var btn = submitBtn;
+        btn.disabled = true;
+        btn.innerHTML = 'Submitting&#8230;';
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/intake-mobile/submit', true);
+        xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+        xhr.onload = function () {
+            btn.disabled = false;
+            btn.innerHTML = 'Submit Intake Form';
+            var res = null;
+            try {
+                var parsed = JSON.parse(xhr.responseText);
+                res = (parsed && Object.prototype.hasOwnProperty.call(parsed, 'result')
+                       && parsed.result !== undefined) ? parsed.result : parsed;
+            } catch (e) {}
+            if (xhr.status >= 200 && xhr.status < 300 && res) {
+                if (res.ok) { onSuccess(res); }
+                else { showErrors(res.errors || [], res.step || 1); }
+            } else {
+                onNetworkError();
+            }
+        };
+        xhr.onerror = function () {
+            btn.disabled = false;
+            btn.innerHTML = 'Submit Intake Form';
+            onNetworkError();
+        };
+        xhr.send(JSON.stringify(payload));
+    }
+
+    function onSuccess(res) {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        form.style.display = 'none';
+        var t = document.getElementById('obbs_thanks');
+        t.style.display = 'block';
+        var has = document.getElementById('obbs_thanks_has');
+        if (res.reference) {
+            document.getElementById('obbs_thanks_name').textContent = res.name ? res.name : '';
+            document.getElementById('obbs_thanks_ref').textContent = res.reference;
+            has.style.display = 'block';
+        } else {
+            has.style.display = 'none';
+        }
+        window.scrollTo(0, 0);
+    }
+
+    function onNetworkError() {
+        showErrors([{step: 1, msg: 'Could not reach the server. Please check your connection and try again - your draft is saved on this device.'}], index + 1);
+    }
+
+    submitBtn.addEventListener('click', doSubmit);
+    document.getElementById('obbs_draft_clear').addEventListener('click', clearDraft);
+    document.getElementById('obbs_new_intake').addEventListener('click', function () {
+        window.location.href = '/intake-mobile';
+    });
+
+    restoreDraft();
+    show(0);
+})();
+]]></script>
+            </body>
+        </html>
+    </template>
+
+</odoo>

@@ -4,7 +4,7 @@ from datetime import date
 from collections import defaultdict
 from dateutil.relativedelta import relativedelta
 from openpyxl import load_workbook
-from odoo import models, api
+from odoo import models, api, fields
 from odoo.exceptions import UserError
 
 
@@ -44,21 +44,20 @@ class OralHealthGenerator(models.AbstractModel):
         wb = load_workbook(self.TEMPLATE_PATH)
 
         if report_type == 'monthly':
-            date_ranges = self._get_month_ranges(year, month)
             sheet_name = self.SHEET_MAP['monthly'][month]
             label = f'Month:  {self.MONTH_LABELS[month]} {year}'
-            self._fill_sheet(wb, sheet_name, date_ranges, label, municipality, province)
         elif report_type == 'quarterly':
-            date_ranges = self._get_quarter_ranges(year, quarter)
             sheet_name = self.SHEET_MAP['quarterly'][quarter]
             q_label = f'{quarter}{"st" if quarter == 1 else "nd" if quarter == 2 else "rd" if quarter == 3 else "th"} QTR {year}'
             label = q_label
-            self._fill_sheet(wb, sheet_name, date_ranges, label, municipality, province)
         elif report_type == 'annual':
-            date_ranges = self._get_annual_ranges(year)
             sheet_name = self.SHEET_MAP['annual']['annual']
             label = f'ANNUAL {year}'
-            self._fill_sheet(wb, sheet_name, date_ranges, label, municipality, province)
+        else:
+            raise UserError('Invalid report type.')
+
+        self._fill_sheet(wb, sheet_name, label, municipality, province,
+                         year, report_type, month=month, quarter=quarter)
 
         output_path = f'/tmp/oral_health_{year}_{report_type}.xlsx'
         wb.save(output_path)
@@ -105,12 +104,30 @@ class OralHealthGenerator(models.AbstractModel):
     def _get_annual_ranges(self, year):
         return [(date(year, 1, 1), date(year, 12, 31))]
 
-    def _fill_sheet(self, wb, sheet_name, date_ranges, label, municipality, province):
+    def _fill_sheet(self, wb, sheet_name, label, municipality, province,
+                    year, report_type, month=None, quarter=None):
         ws = wb[sheet_name]
 
         ws['A5'] = label
         ws['A6'] = f'Province: {province}'
         ws['A8'] = f'Municipality: {municipality}'
+
+        period = self._build_period_context(year, report_type, month=month, quarter=quarter)
+        self._write_data_rows(ws, period['row_data'])
+
+    def _build_period_context(self, year, report_type, month=None, quarter=None):
+        """Compute all aggregates the Form-2 engine needs for a single period.
+
+        Shared by the Excel report and the dashboard so both always agree.
+        """
+        if report_type == 'monthly':
+            date_ranges = self._get_month_ranges(year, month)
+        elif report_type == 'quarterly':
+            date_ranges = self._get_quarter_ranges(year, quarter)
+        elif report_type == 'annual':
+            date_ranges = self._get_annual_ranges(year)
+        else:
+            raise UserError('Invalid report type.')
 
         all_patients = self.env['dental.patient'].search([])
         patient_map = {p.id: p for p in all_patients}
@@ -191,12 +208,24 @@ class OralHealthGenerator(models.AbstractModel):
                 visit_flags[pid]['ofc_rehabilitation'] = True
 
         column_defs = self._get_column_definitions()
-        row_data = self._compute_all_rows(
+        row_data, patient_sets = self._compute_all_rows(
             all_patients, patient_map, visited_patients, patient_latest_med,
             patient_conditions, patient_dmft, visit_services, visit_flags, column_defs,
         )
 
-        self._write_data_rows(ws, row_data)
+        return {
+            'date_ranges': date_ranges,
+            'start_date': start_date,
+            'end_date': end_date,
+            'visits': visits,
+            'visited_patients': visited_patients,
+            'patient_map': patient_map,
+            'column_defs': column_defs,
+            'patient_sets': patient_sets,
+            'row_data': row_data,
+            'patient_conditions': patient_conditions,
+            'visit_services': visit_services,
+        }
 
     def _get_column_definitions(self):
         return [
@@ -342,7 +371,7 @@ class OralHealthGenerator(models.AbstractModel):
                 pset = patient_sets[label]
                 row_data[row_key][col_def['col']] = row_fn(pset, data_ctx)
 
-        return row_data
+        return row_data, patient_sets
 
     def _row_attended(self, pset, data):
         return len(pset)
@@ -721,3 +750,273 @@ class OralHealthGenerator(models.AbstractModel):
                 continue
             for col_letter, value in col_data.items():
                 ws[f'{col_letter}{excel_row}'] = value
+
+    AGE_GROUPS = [
+        {
+            'key': 'pregnant',
+            'label': 'Pregnant Women (10-49 y)',
+            'cols': ['preg_10_14', 'preg_15_19', 'preg_20_49'],
+        },
+        {
+            'key': 'infant',
+            'label': 'Infant (0 y)',
+            'cols': ['infant_m', 'infant_f'],
+        },
+        {
+            'key': 'under5',
+            'label': 'Under-5 (1-4 y)',
+            'cols': ['u5_1_m', 'u5_1_f', 'u5_2_m', 'u5_2_f',
+                     'u5_3_m', 'u5_3_f', 'u5_4_m', 'u5_4_f'],
+        },
+        {
+            'key': 'school',
+            'label': 'School-age (5-9 y)',
+            'cols': ['school_5_m', 'school_5_f', 'school_6_m', 'school_6_f',
+                     'school_7_m', 'school_7_f', 'school_8_m', 'school_8_f',
+                     'school_9_m', 'school_9_f'],
+        },
+        {
+            'key': 'adol_10',
+            'label': 'Adolescent (10-14 y)',
+            'cols': ['adol_10_m', 'adol_10_f'],
+        },
+        {
+            'key': 'adol_15',
+            'label': 'Adolescent (15-19 y)',
+            'cols': ['adol_15_m', 'adol_15_f'],
+        },
+        {
+            'key': 'adult',
+            'label': 'Adult (20-59 y)',
+            'cols': ['adult_m', 'adult_f'],
+        },
+        {
+            'key': 'senior',
+            'label': 'Senior (60+)',
+            'cols': ['senior_m', 'senior_f'],
+        },
+    ]
+
+    SECTIONS = [
+        {
+            'key': 'medical_history',
+            'label': 'Medical History',
+            'rows': [
+                ('allergies', 'Allergies'),
+                ('hypertension', 'Hypertension'),
+                ('diabetes', 'Diabetes'),
+                ('blood_disorders', 'Blood Disorders'),
+                ('cardiovascular', 'Cardiovascular Disease'),
+                ('thyroid', 'Thyroid Disorders'),
+                ('hepatitis', 'Hepatitis'),
+                ('malignancy', 'Malignancy'),
+                ('hospitalization', 'Hospitalization History'),
+                ('blood_transfusion', 'Blood Transfusion'),
+                ('tattoo', 'Tattoo'),
+            ],
+        },
+        {
+            'key': 'dietary',
+            'label': 'Dietary & Social',
+            'rows': [
+                ('ssb', 'Sweet/Salty/Starchy Consumption (SSB)'),
+                ('alcohol', 'Alcohol Use'),
+                ('tobacco', 'Tobacco / Smoking'),
+                ('betel_nut', 'Betel Nut Chewing'),
+            ],
+        },
+        {
+            'key': 'oral_health',
+            'label': 'Oral Health & DMFT',
+            'rows': [
+                ('dental_caries', 'With Dental Caries'),
+                ('gingivitis', 'With Gingivitis'),
+                ('periodontal', 'With Periodontal Disease'),
+                ('oral_debris', 'With Oral Debris'),
+                ('calculus', 'With Calculus'),
+                ('dento_facial', 'With Dento-Facial Anomaly'),
+                ('df_total', 'Decayed/Filled (DF) Total'),
+                ('df_decayed', 'DF - Decayed'),
+                ('df_filled', 'DF - Filled'),
+                ('dmft_total', 'DMFT Total'),
+                ('dmft_d', 'DMFT - Decayed'),
+                ('dmft_m', 'DMFT - Missing'),
+                ('dmft_f', 'DMFT - Filled'),
+            ],
+        },
+        {
+            'key': 'services',
+            'label': 'Services Rendered',
+            'rows': [
+                ('scaling', 'Scaling / Polishing'),
+                ('perm_fillings', 'Permanent Fillings'),
+                ('temp_fillings', 'Temporary Fillings'),
+                ('extraction', 'Extraction'),
+                ('gum_treatment', 'Gum Treatment'),
+                ('sealant', 'Pit & Fissure Sealant'),
+                ('fluoride', 'Fluoride Treatment'),
+                ('post_op', 'Post-Operative Care'),
+                ('abscess', 'Abscess Treatment'),
+                ('other_services', 'Other Services'),
+                ('referred', 'Clients Referred'),
+                ('counseling', 'Counseling / Education'),
+                ('toothbrush_drill', 'Toothbrushing Drill (Under-6)'),
+            ],
+        },
+        {
+            'key': 'ofc',
+            'label': 'Orofacial (OFC) Anomaly',
+            'rows': [
+                ('ofc_exam', 'OFC Upon Oral Examination'),
+                ('ofc_rehab', 'OFC Upon Complete Oral Rehabilitation'),
+            ],
+        },
+    ]
+
+    @staticmethod
+    def _column_label_to_letter(column_defs):
+        return {d['label']: d['col'] for d in column_defs}
+
+    def _period_label(self, year, report_type, month=None, quarter=None):
+        if report_type == 'monthly':
+            return f'Month:  {self.MONTH_LABELS[month]} {year}'
+        if report_type == 'quarterly':
+            suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(quarter, 'th')
+            return f'{quarter}{suffix} QTR {year}'
+        return f'ANNUAL {year}'
+
+    def _patient_summaries(self, patient_ids, patient_map, visits):
+        visit_map = {}
+        for v in visits:
+            pid = v.patient_id.id
+            if pid not in visit_map or v.visit_date > visit_map[pid]:
+                visit_map[pid] = v.visit_date
+        summaries = []
+        for pid in sorted(patient_ids):
+            p = patient_map.get(pid)
+            if not p:
+                continue
+            summaries.append({
+                'id': pid,
+                'patient_number': p.patient_number,
+                'name': p.display_name,
+                'sex': p.sex,
+                'age': p.age,
+                'barangay': p.barangay or '',
+                'last_visit': str(visit_map.get(pid) or ''),
+            })
+        return summaries
+
+    @api.model
+    def get_dashboard_data(self, year, report_type, month=None, quarter=None,
+                           municipality='ANGONO', province='Rizal'):
+        """Aggregate the Form-2 engine for the dashboard (JSON-safe)."""
+        period = self._build_period_context(year, report_type, month=month, quarter=quarter)
+        row_data = period['row_data']
+        patient_sets = period['patient_sets']
+        col_letter = self._column_label_to_letter(period['column_defs'])
+
+        groups = []
+        patients_by_group = {}
+        for grp in self.AGE_GROUPS:
+            male = set()
+            female = set()
+            for col in grp['cols']:
+                ids = patient_sets.get(col, set())
+                if col.endswith('_m'):
+                    male |= ids
+                else:
+                    female |= ids
+            total = male | female
+            groups.append({
+                'key': grp['key'],
+                'label': grp['label'],
+                'm': len(male),
+                'f': len(female),
+                'total': len(total),
+            })
+            patients_by_group[grp['key']] = self._patient_summaries(
+                total, period['patient_map'], period['visits'])
+
+        # Disjoint chart groups (pregnant is a subset of female age groups)
+        chart_groups = [g for g in groups if g['key'] != 'pregnant']
+        pregnant_count = next((g['total'] for g in groups if g['key'] == 'pregnant'), 0)
+
+        sections = []
+        for section in self.SECTIONS:
+            rows_out = []
+            for row_key, label in section['rows']:
+                values = []
+                for grp in self.AGE_GROUPS:
+                    values.append(sum(
+                        row_data.get(row_key, {}).get(col_letter[col], 0)
+                        for col in grp['cols']))
+                values.append(
+                    row_data.get(row_key, {}).get(col_letter['grand_total'], 0))
+                rows_out.append({'key': row_key, 'label': label, 'values': values})
+            sections.append({
+                'key': section['key'],
+                'label': section['label'],
+                'columns': [g['label'] for g in self.AGE_GROUPS] + ['Total'],
+                'rows': rows_out,
+            })
+
+        kpis = {
+            'attended': len(period['visited_patients']),
+            'male': len(patient_sets.get('total_m', set())),
+            'female': len(patient_sets.get('total_f', set())),
+            'pregnant': pregnant_count,
+            'with_caries': row_data.get('dental_caries', {}).get(
+                col_letter['grand_total'], 0),
+            'procedures': sum(
+                row_data.get(rk, {}).get(col_letter['grand_total'], 0)
+                for rk in ('scaling', 'perm_fillings', 'temp_fillings', 'extraction',
+                           'gum_treatment', 'sealant', 'fluoride', 'post_op',
+                           'abscess', 'other_services')),
+        }
+
+        # Drill-down patient lists for KPI cards (disjoint where applicable)
+        patient_conditions = period['patient_conditions']
+        visit_services = period['visit_services']
+        patients_by_kpi = {}
+        patients_by_kpi['attended'] = self._patient_summaries(
+            period['visited_patients'], period['patient_map'], period['visits'])
+        patients_by_kpi['male'] = self._patient_summaries(
+            patient_sets.get('total_m', set()), period['patient_map'], period['visits'])
+        patients_by_kpi['female'] = self._patient_summaries(
+            patient_sets.get('total_f', set()), period['patient_map'], period['visits'])
+        patients_by_kpi['pregnant'] = self._patient_summaries(
+            patient_sets.get('preg_total', set()), period['patient_map'], period['visits'])
+        patients_by_kpi['with_caries'] = self._patient_summaries(
+            {pid for pid in period['visited_patients']
+             if 'D' in patient_conditions.get(pid, set())},
+            period['patient_map'], period['visits'])
+        patients_by_kpi['procedures'] = self._patient_summaries(
+            {pid for pid, svcs in visit_services.items() if svcs},
+            period['patient_map'], period['visits'])
+
+        years = [d.year for d in self.env['dental.visit'].search([]).mapped('visit_date')]
+        available_years = sorted({y for y in years if y})
+        if not available_years:
+            available_years = [year]
+
+        return {
+            'ok': True,
+            'period_label': self._period_label(year, report_type, month, quarter),
+            'year': year,
+            'report_type': report_type,
+            'month': month,
+            'quarter': quarter,
+            'municipality': municipality,
+            'province': province,
+            'generated_on': str(fields.Date.today()),
+            'date_start': str(period['start_date']),
+            'date_end': str(period['end_date']),
+            'available_years': available_years,
+            'kpis': kpis,
+            'groups': groups,
+            'chart_groups': chart_groups,
+            'patients_by_group': patients_by_group,
+            'patients_by_kpi': patients_by_kpi,
+            'sections': sections,
+        }

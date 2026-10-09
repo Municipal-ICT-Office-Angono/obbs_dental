@@ -38,6 +38,37 @@ obbs_dental
 
 ---
 
+# Demo Environment (Docker)
+
+A one-command containerized demo runs the stock **`odoo:19`** image plus **`postgres:16`** (no custom build required — this module targets stock Odoo 19.0). The repo's nested `base/` folder is not scanned because Odoo addons discovery is not recursive.
+
+```bash
+./scripts/setup_demo.sh          # bootstrap + serve at http://localhost:8069
+./scripts/destroy_demo.sh        # stop containers and delete the volumes
+```
+
+What the script does (idempotent; re-running only upgrades the module and never duplicates demo data):
+
+1. Start PostgreSQL and wait until healthy.
+2. Create/upgrade database `obbs_dental_demo` and install `obbs_dental`.
+3. Generate **100 demo patients** with medical histories, dental conditions, visits, dental histories, and consents (`dental.patient.demo_generate()`).
+4. Create the **portal test account** `deleon.jose@yahoo.com` / `Portal@123` (pure portal user) linked to a demo patient.
+5. Start the Odoo server.
+
+| What | URL / credentials |
+|---|---|
+| Backend | http://localhost:8069/web/login — `admin` / `admin` |
+| Public intake form | http://localhost:8069/patient-intake |
+| Patient portal | `/my`, `/my/patient`, `/my/medical_history`, `/my/dental_history`, `/my/dental_chart` — `deleon.jose@yahoo.com` / `Portal@123` |
+
+Notes:
+
+- **Docker credential bug on macOS (this project's machine):** `docker-credential-desktop` is not on the default `PATH`. Prefix docker commands with `export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"`.
+- Odoo 19 removed the `--admin-passwd` CLI flag — the default `admin`/`admin` login is used.
+- Portal users hold **zero ACLs** on `dental.*`; portal routes `sudo()` internally and scope every search to `request.env.user.partner_id`.
+
+---
+
 # Initial Module Structure
 
 ```
@@ -47,6 +78,7 @@ obbs_dental/
 ├── controllers/
 │   ├── intake.py            # public 5-step web intake form (/patient-intake)
 │   ├── portal.py            # patient portal: /my/patient, medical/dental history, chart
+│   ├── dashboard.py         # GET /obbs/dashboard/data (JSON for the OWL dashboard)
 │   └── chart_geometry.py    # shared odontogram geometry (SVG mirror of the OWL widget)
 ├── models/
 │   ├── dental_patient.py
@@ -92,10 +124,12 @@ obbs_dental/
 │       │   ├── odontogram.js
 │       │   ├── tooth_layout.js
 │       │   ├── tooth_dialog.js
-│       │   └── patient_intake.js
+│       │   ├── patient_intake.js
+│       │   └── dashboard.js
 │       ├── xml/
 │       │   ├── odontogram.xml
-│       │   └── tooth_dialog.xml
+│       │   ├── tooth_dialog.xml
+│       │   └── dashboard.xml
 │       └── scss/
 └── ANGONO 2026 blank form 2.xlsx
 ```
@@ -471,19 +505,31 @@ The module is designed to integrate seamlessly with existing Odoo applications.
 
 ## Next Steps
 
-1. **Milestone 5 — Operations** ⏳: Appointment scheduling, billing, payments, reports, dashboard, analytics.
+1. **Milestone 5 — Operations** ⏳: Appointment scheduling, billing, payments, analytics (dashboard/reporting part is done — see below).
 2. **Replace placeholder portal card icons** with dental-specific SVGs (see note in Milestone 5b).
 3. Add portal **attachment/viewing** (X-rays, clinical photos) and **consent form** display now that the Clinical Workflow milestone has landed.
 
 ---
 
-## Milestone 5 — Operations ⏳ *(Pending)*
+## Milestone 5 — Operations ⏳ *(In Progress — Dashboard done)*
 
+### Oral Health Dashboard ✅ *(Completed — Reporting)*
+
+- [x] `GET /obbs/dashboard/data` endpoint (auth='user') — reuses the Form-2 engine for JSON aggregation
+- [x] KPI cards: Patients Attended, Male, Female, Pregnant, With Caries, Procedures
+- [x] Chart.js v4 stacked bar chart (7 disjoint age groups → male/female)
+- [x] Form-2 section tables (Medical History, Dietary/Social, Oral Health + DMFT, Services, OFC)
+- [x] Filters: report type (monthly/quarterly/annual) + year/month/quarter + municipality/province
+- [x] Drill-down from KPI cards and chart bars to matching patient records (openable from the table)
+- [x] Menu: Dental > Dashboard
+
+**Test procedure**: Login as `admin`/`admin` → Dental > Dashboard. Verify 6 KPI cards + chart + section tables load. Change Month/Year filters and confirm numbers update and the label changes. Click a KPI card → the matched patient table appears below (page scrolls); click Open on a row → patient form opens. Click a chart bar → its age-group patients list appears. Close the drill-down, then run the same filters in Dental > Reports > Oral Health Form 2 (Excel) — the dashboard numbers must match the Excel report.
+
+### Remaining
 - [ ] Appointment Scheduling
 - [ ] Billing
 - [ ] Payment Recording
 - [ ] Reports
-- [ ] Dashboard
 - [ ] Analytics
 
 ---

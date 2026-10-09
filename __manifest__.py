@@ -36,6 +36,7 @@ Electronic Dental Record (EDR).
         'views/menus.xml',
         'views/portal_patient_templates.xml',
         'views/patient_intake_templates.xml',
+        'views/intake_mobile_templates.xml',
     ],
 
     'assets': {
@@ -43,6 +44,7 @@ Electronic Dental Record (EDR).
             'obbs_dental/static/src/js/tooth_layout.js',
             'obbs_dental/static/src/js/tooth_dialog.js',
             'obbs_dental/static/src/js/odontogram.js',
+            'obbs_dental/static/src/js/dashboard.js',
             'obbs_dental/static/src/xml/**/*',
             'obbs_dental/static/src/scss/dental_chart.scss',
         ],

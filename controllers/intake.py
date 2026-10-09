@@ -56,6 +56,44 @@ class DentalPatientIntake(http.Controller):
         return request.render('obbs_dental.patient_intake_page',
                               self._form_values({}))
 
+    @http.route('/intake-mobile', type='http', auth='public', website=True,
+                methods=['GET'])
+    def intake_mobile(self):
+        return request.render('obbs_dental.intake_mobile_page', {})
+
+    @http.route('/intake-mobile/submit', type='json', auth='public',
+                methods=['POST'])
+    def intake_mobile_submit(self):
+        """JSON submit used by the lightweight iOS-12-friendly intake page.
+
+        Returns {'ok': True, 'reference': patient_number, 'name': str} on
+        success, or {'ok': False, 'errors': [{'step': n, 'msg': str}],
+        'step': n} on validation errors. A honeypot hit returns the same
+        shape as success but with a falsy reference (mirrors the web form,
+        which shows the thanks page without creating a record).
+        """
+        posted = request.get_json_data() or {}
+        if posted.get('website'):
+            return {'ok': True, 'reference': False, 'name': False}
+
+        errors, data = self._collect_and_validate(posted)
+        if errors:
+            return {
+                'ok': False,
+                'errors': errors,
+                'step': min(e['step'] for e in errors),
+            }
+
+        patient = self._create_from_intake(data)
+        try:
+            patient.sudo()._create_customer_partner()
+        except Exception:
+            _logger.warning('Could not link res.partner for mobile intake %s',
+                            patient.patient_number, exc_info=True)
+        return {'ok': True,
+                'reference': patient.patient_number,
+                'name': patient.display_name}
+
     def _form_values(self, posted, errors=None, active_step=1):
         return {
             'posted': posted,
@@ -97,11 +135,37 @@ class DentalPatientIntake(http.Controller):
 
     def _process_intake(self, post):
         posted = dict(post)
-        errors = []
-
         if posted.get('website'):
             return request.render('obbs_dental.patient_intake_thanks',
                                   {'patient': None, 'posted': posted})
+
+        errors, data = self._collect_and_validate(posted)
+        if errors:
+            active_step = min(e['step'] for e in errors)
+            return request.render(
+                'obbs_dental.patient_intake_page',
+                self._form_values(posted, errors, active_step))
+
+        patient = self._create_from_intake(data)
+
+        try:
+            patient.sudo()._create_customer_partner()
+        except Exception:
+            _logger.warning('Could not link res.partner for web intake %s',
+                            patient.patient_number, exc_info=True)
+
+        return request.render('obbs_dental.patient_intake_thanks',
+                              {'patient': patient, 'posted': posted})
+
+    def _collect_and_validate(self, posted):
+        """Validate raw form data (web POST dict or JSON dict).
+
+        Returns a tuple ``(errors, data)`` where ``errors`` is a list of
+        ``{'step': n, 'msg': str}`` dicts and ``data`` is a dict of parsed,
+        normalized values ready for the ``_create_*`` helpers.
+        """
+        errors = []
+        data = {}
 
         last_name = (posted.get('last_name') or '').strip()
         first_name = (posted.get('first_name') or '').strip()
@@ -232,110 +296,124 @@ class DentalPatientIntake(http.Controller):
                            'a new intake form.' % duplicate.patient_number,
                 })
 
-        if errors:
-            active_step = min(e['step'] for e in errors)
-            return request.render(
-                'obbs_dental.patient_intake_page',
-                self._form_values(posted, errors, active_step))
-
-        patient = self._create_patient(
-            posted, last_name, first_name, middle_name, sex, birthdate, mobile,
-            email, barangay, address, occupation, guardian, philhealth,
-            last_dental_visit, visit_frequency, orthodontic_history,
-            has_prosthesis, prosthesis_since, referred_by, referred_reason)
-
-        self._create_medical_history(
-            patient, under_treatment, under_treatment_notes, serious_illness,
-            serious_illness_notes, was_hospitalized, hospitalization_notes,
-            taking_medication, medication_notes, posted, allergies, pregnant,
-            pregnancy_months, nursing, birth_control, condition_bools,
-            medical_conditions)
-
-        self._create_consents(patient, consent_name, consent_signature,
-                              waiver_name, waiver_signature)
-
-        try:
-            patient.sudo()._create_customer_partner()
-        except Exception:
-            _logger.warning('Could not link res.partner for web intake %s',
-                            patient.patient_number, exc_info=True)
-
-        return request.render('obbs_dental.patient_intake_thanks',
-                              {'patient': patient, 'posted': posted})
-
-    def _create_patient(self, posted, last_name, first_name, middle_name, sex,
-                        birthdate, mobile, email, barangay, address, occupation,
-                        guardian, philhealth, last_dental_visit, visit_frequency,
-                        orthodontic_history, has_prosthesis, prosthesis_since,
-                        referred_by, referred_reason):
-        return request.env['dental.patient'].sudo().create({
+        data.update({
             'last_name': last_name,
             'first_name': first_name,
-            'middle_name': middle_name or False,
-            'birthdate': birthdate,
+            'middle_name': middle_name,
             'sex': sex,
             'mobile': mobile,
-            'email': email or False,
+            'email': email,
             'barangay': barangay,
-            'home_address': address,
-            'occupation': occupation or False,
-            'guardian': guardian or False,
-            'philhealth_number': philhealth or False,
+            'address': address,
+            'occupation': occupation,
+            'guardian': guardian,
+            'philhealth': philhealth,
+            'birthdate': birthdate,
+            'last_dental_visit': last_dental_visit,
+            'visit_frequency': visit_frequency,
+            'orthodontic_history': orthodontic_history,
+            'has_prosthesis': has_prosthesis,
+            'prosthesis_since': prosthesis_since,
+            'referred_by': referred_by,
+            'referred_reason': referred_reason,
+            'under_treatment': under_treatment,
+            'under_treatment_notes': under_treatment_notes,
+            'serious_illness': serious_illness,
+            'serious_illness_notes': serious_illness_notes,
+            'was_hospitalized': was_hospitalized,
+            'hospitalization_notes': hospitalization_notes,
+            'taking_medication': taking_medication,
+            'medication_notes': medication_notes,
+            'allergies': allergies,
+            'pregnant': pregnant,
+            'pregnancy_months': pregnancy_months,
+            'nursing': nursing,
+            'birth_control': birth_control,
+            'condition_bools': condition_bools,
+            'medical_conditions': medical_conditions,
+            'consent_name': consent_name,
+            'consent_signature': consent_signature,
+            'waiver_name': waiver_name,
+            'waiver_signature': waiver_signature,
+            'p4s_recipient': bool(posted.get('p4s_recipient')),
+            'p4s_beneficiary': bool(posted.get('p4s_beneficiary')),
+            'ip': bool(posted.get('ip')),
+            'senior': bool(posted.get('senior')),
+            'pwd': bool(posted.get('pwd')),
+            'solo_parent': bool(posted.get('solo_parent')),
+            'tobacco': bool(posted.get('tobacco')),
+            'alcohol_drugs': bool(posted.get('alcohol_drugs')),
+        })
+        return errors, data
+
+    def _create_from_intake(self, data):
+        patient = self._create_patient(data)
+        self._create_medical_history(patient, data)
+        self._create_consents(patient, data)
+        return patient
+
+    def _create_patient(self, data):
+        return request.env['dental.patient'].sudo().create({
+            'last_name': data['last_name'],
+            'first_name': data['first_name'],
+            'middle_name': data.get('middle_name') or False,
+            'birthdate': data['birthdate'],
+            'sex': data['sex'],
+            'mobile': data['mobile'],
+            'email': data.get('email') or False,
+            'barangay': data['barangay'],
+            'home_address': data['address'],
+            'occupation': data.get('occupation') or False,
+            'guardian': data.get('guardian') or False,
+            'philhealth_number': data.get('philhealth') or False,
             'source': 'web_intake',
             'intake_status': 'pending_review',
-            'is_4ps_recipient': bool(posted.get('p4s_recipient')),
-            'is_4ps_beneficiary': bool(posted.get('p4s_beneficiary')),
-            'is_indigenous': bool(posted.get('ip')),
-            'is_senior': bool(posted.get('senior')),
-            'is_pwd': bool(posted.get('pwd')),
-            'is_solo_parent': bool(posted.get('solo_parent')),
-            'last_dental_visit': last_dental_visit,
-            'dental_visit_frequency': visit_frequency or False,
-            'orthodontic_history': orthodontic_history or False,
-            'dental_prosthesis': has_prosthesis,
-            'dental_prosthesis_since': prosthesis_since or False,
-            'referred_by': referred_by or False,
-            'referred_reason': referred_reason or False,
+            'is_4ps_recipient': data.get('p4s_recipient', False),
+            'is_4ps_beneficiary': data.get('p4s_beneficiary', False),
+            'is_indigenous': data.get('ip', False),
+            'is_senior': data.get('senior', False),
+            'is_pwd': data.get('pwd', False),
+            'is_solo_parent': data.get('solo_parent', False),
+            'last_dental_visit': data.get('last_dental_visit'),
+            'dental_visit_frequency': data.get('visit_frequency') or False,
+            'orthodontic_history': data.get('orthodontic_history') or False,
+            'dental_prosthesis': data.get('has_prosthesis', False),
+            'dental_prosthesis_since': data.get('prosthesis_since') or False,
+            'referred_by': data.get('referred_by') or False,
+            'referred_reason': data.get('referred_reason') or False,
         })
 
-    def _create_medical_history(self, patient, under_treatment,
-                                under_treatment_notes, serious_illness,
-                                serious_illness_notes, was_hospitalized,
-                                hospitalization_notes, taking_medication,
-                                medication_notes, posted, allergies, pregnant,
-                                pregnancy_months, nursing, birth_control,
-                                condition_bools, medical_conditions):
+    def _create_medical_history(self, patient, data):
         vals = {
             'patient_id': patient.id,
             'date': fields.Date.today(),
-            'under_medical_treatment': under_treatment,
-            'smoking': bool(posted.get('tobacco')),
-            'alcohol_use': bool(posted.get('alcohol_drugs')),
+            'under_medical_treatment': data.get('under_treatment', False),
+            'smoking': data.get('tobacco', False),
+            'alcohol_use': data.get('alcohol_drugs', False),
         }
-        if under_treatment_notes:
-            vals['under_medical_treatment_notes'] = under_treatment_notes
-        if serious_illness_notes:
-            vals['previous_surgeries'] = serious_illness_notes
-        if was_hospitalized:
-            vals['hospitalization'] = hospitalization_notes
+        if data.get('under_treatment_notes'):
+            vals['under_medical_treatment_notes'] = data['under_treatment_notes']
+        if data.get('serious_illness_notes'):
+            vals['previous_surgeries'] = data['serious_illness_notes']
+        if data.get('was_hospitalized'):
+            vals['hospitalization'] = data['hospitalization_notes']
             vals['hospitalization_history'] = True
-        if medication_notes:
-            vals['current_medication'] = medication_notes
-        if allergies:
-            vals['allergies'] = allergies
+        if data.get('medication_notes'):
+            vals['current_medication'] = data['medication_notes']
+        if data.get('allergies'):
+            vals['allergies'] = data['allergies']
         if patient.sex == 'female':
-            vals['pregnancy'] = pregnant
-            if pregnancy_months:
-                vals['pregnancy_months'] = pregnancy_months
-            vals['nursing'] = nursing
-            vals['birth_control_pills'] = birth_control
-        vals.update(condition_bools)
-        if medical_conditions:
-            vals['medical_conditions'] = medical_conditions
+            vals['pregnancy'] = data.get('pregnant', False)
+            if data.get('pregnancy_months'):
+                vals['pregnancy_months'] = data['pregnancy_months']
+            vals['nursing'] = data.get('nursing', False)
+            vals['birth_control_pills'] = data.get('birth_control', False)
+        vals.update(data.get('condition_bools', {}))
+        if data.get('medical_conditions'):
+            vals['medical_conditions'] = data['medical_conditions']
         request.env['dental.medical.history'].sudo().create(vals)
 
-    def _create_consents(self, patient, consent_name, consent_signature,
-                         waiver_name, waiver_signature):
+    def _create_consents(self, patient, data):
         consent_env = request.env['dental.consent'].sudo()
         today = fields.Date.today()
         consent_env.create({
@@ -344,9 +422,9 @@ class DentalPatientIntake(http.Controller):
             'description': 'Data Privacy Consent signed via the online patient '
                            'intake form.',
             'signed_date': today,
-            'signed_by': consent_name,
-            'signature': consent_signature,
-            'signature_name': consent_name,
+            'signed_by': data['consent_name'],
+            'signature': data['consent_signature'],
+            'signature_name': data['consent_name'],
             'state': 'signed',
         })
         consent_env.create({
@@ -355,8 +433,8 @@ class DentalPatientIntake(http.Controller):
             'description': 'Extraction waiver signed via the online patient '
                            'intake form.',
             'signed_date': today,
-            'signed_by': waiver_name,
-            'signature': waiver_signature,
-            'signature_name': waiver_name,
+            'signed_by': data['waiver_name'],
+            'signature': data['waiver_signature'],
+            'signature_name': data['waiver_name'],
             'state': 'signed',
         })

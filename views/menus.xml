@@ -46,6 +46,16 @@
               parent="menu_dental_root"
               sequence="30"/>
 
+    <record id="action_dental_dashboard" model="ir.actions.client">
+        <field name="name">Oral Health Dashboard</field>
+        <field name="tag">obbs_dental_dashboard</field>
+    </record>
+    <menuitem id="menu_dental_dashboard"
+              name="Dashboard"
+              parent="menu_dental_root"
+              sequence="9"
+              action="action_dental_dashboard"/>
+
     <menuitem id="menu_oral_health_report"
               name="Oral Health Form 2"
               parent="menu_dental_reports"

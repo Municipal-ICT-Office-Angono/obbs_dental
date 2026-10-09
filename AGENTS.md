@@ -30,8 +30,8 @@
 
 ## Development Status (Sep 2026)
 
-**Complete**: Milestones 1 (foundation), 2 (intake), 3 (odontogram), 5a (demo data + DOH Form 2 report), 5b (patient portal, **Phases 1–5 all done**), **Public Patient Intake (web intake form at `/patient-intake`)**, and **Milestone 4 (Clinical Workflow)**.
-**Next up**: Milestone 5 (Operations — scheduling, billing, payments, reports, dashboard). Portal polish items: replace the shared placeholder `t-set="icon"` on the four portal home cards with dental SVGs.
+**Complete**: Milestones 1 (foundation), 2 (intake), 3 (odontogram), 5a (demo data + DOH Form 2 report), 5b (patient portal, **Phases 1–5 all done**), **Public Patient Intake (web intake form at `/patient-intake`)**, **Milestone 4 (Clinical Workflow)**, and the **Oral Health Dashboard** (Operations reporting — KPI cards, Chart.js stacked bars, Form-2 section tables, drill-down to patient records).
+**Next up**: remaining Milestone 5 (Operations — appointment scheduling, billing, payments, analytics). Portal polish items: replace the shared placeholder `t-set="icon"` on the four portal home cards with dental SVGs.
 
 ### Deploy reminders
 - **Model changes** (new fields/models): always `docker restart odoo19_prod` after the upgrade. The `-u` upgrade runs in a separate process that updates the DB, but the long-running server keeps a **stale in-memory registry** — without a restart the web client throws `"..."."..." field is undefined` (OwlError / `Field.parseFieldNode`) even though the field exists in `ir_model_fields`.
@@ -103,10 +103,33 @@
 - **ACL**: Manager full, Assistant read/write/create (no unlink) — same pattern as other `dental.*` models.
 - **Test record** (left for inspection): clinical finding id 2 (completed) + visit 767 on **Test Del Mundo** (PAT/2026/00410).
 
-## Public Patient Intake (Phase 1+2 — Completed)
+## Oral Health Dashboard (Milestone 5 Operations — Reporting Done)
 
+- **Controller**: `controllers/dashboard.py` — `DentalDashboard` with `GET /obbs/dashboard/data` (auth='user', JSON response). Accepts params `year`, `report_type` (monthly/quarterly/annual), `month`, `quarter`, `municipality`, `province`.
+- **Backend**: `report/oral_health_report.py` — `get_dashboard_data()` reuses the Form-2 engine (`_build_period_context`) to return `kpis`, `groups` (7 disjoint age groups + pregnant), `chart_groups` (7 disjoint, pregnant excluded), `sections` (Form-2 section tables), `patients_by_group` (drill-down per chart bar), `patients_by_kpi` (drill-down per KPI card), `available_years`.
+  - `patients_by_kpi` keys: `attended`, `male`, `female`, `pregnant`, `with_caries`, `procedures` — each a list of `{id, patient_number, name, sex, age, barangay, last_visit}`. `procedures` drill-down is distinct patients (NOT procedure count).
+  - `_build_period_context` also returns `patient_conditions` (pid→set of condition codes) and `visit_services` (pid→set of service codes) — used for KPI drill-down computation.
+  - **Chart uses 7 disjoint groups** (pregnant excluded, it's a subset of female); `sum(chart_groups) == attended`.
+- **OWL client action**: `obbs_dental_dashboard` registered in `static/src/js/dashboard.js`, template `obbs_dental.Dashboard` in `static/src/xml/dashboard.xml`.
+  - Chart.js v4 loaded via `loadBundle("web.chartjs_lib")` in `onWillStart`.
+  - **Event handling**: `t-on-click="onRootClick"` on root div (event delegation) + `t-on-change="onFilterChange"` on filter `<select>`/`<input>`. Handler identifies targets via `ev.target.closest("[data-...]")`. Drill-down from KPI cards (`data-drill="kpi:attended"`) and chart bars (`data-chart-canvas`); chart click maps bar index to `chart_groups[index].key`.
+  - **Chart clicks**: DO NOT use Chart.js `options.onClick` — use a native canvas click handler instead (`t-on-click` on a div wrapping the canvas works in this build).
+  - **Scroll**: root div MUST have `style="height: calc(100vh - 90px); overflow-y: auto"` — without it the dashboard content overflows the Odoo content area with no scrollbar, making the drill-down tables unreachable.
+- **Menu**: Dental > Dashboard (`menu_dental_dashboard`, sequence 9) — top-level under root, no submenu.
+- **Widget**: `ir.actions.client` with `tag='obbs_dental_dashboard'` — no QWeb report, no JS widget registration needed.
+- **Deploy recipe**: JS/asset changes: `DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%'` then upgrade (`-u obbs_dental`). After deploy, verify bundle parse with `node --check` — a single duplicate `const` in the 6 MB minified bundle kills the ENTIRE web client (blank page with no error in server logs).
+- **File**: `ANGONO 2026 blank form 2.xlsx` is the template for the DOH report and must be present at the module root — the `TEMPLATE_PATH` in `oral_health_report.py` computes it relative to `__file__`.
+
+### OWL 19 Dashboard Gotchas
+- **`t-foreach` requires `t-key`** — OWL 19 throws `Directive t-foreach should always be used with a t-key!` if missing.
+- **`String()`/`Number()` not available in OWL template expressions** — `ctx.String is not a function`. Move conversions to component methods (e.g. `isSelectedYear(y)`, `isSelectedMonth(m)`).
+- **Inline arrow handlers in `t-on-*` do NOT fire** in this Odoo 19 build. Use bare method references: `t-on-click="onRootClick"`. Targets identified via `ev.target.closest("[data-*]")` and `data-*` attributes set with `t-att-data-*="expr"`.
+- **Duplicate `const` declarations** in the same block scope → `SyntaxError` in the minified bundle → entire web client blank (no server-side error). Always validate with `node --check` on the served bundle after deploying.
+
+---
+
+## Public Patient Intake (Phase 1+2 — Completed)
 - **Route** `/patient-intake` (`GET`+`POST`, `auth='public'`, `website=True`) in `controllers/intake.py` (`DentalPatientIntake`). 5-step wizard template `views/patient_intake_templates.xml` + `static/src/js/patient_intake.js`.
-  - **Steps**: 1 Personal → 2 Dental History → 3 Medical History → 4 Allergies & Conditions → 5 Consent & Waiver. Stepper displays indicator dots; Next/Back buttons; Enter-on-input advances (Crash-free on last step = submit).
 - **Creates on submit** (ALL via `sudo()` — public user has zero ACL): `dental.patient` (`source='web_intake'`, `intake_status='pending_review'`, program flags 4Ps/IP/senior/PWD/solo-parent, dental-history fields) → `dental.medical.history` (DOH booleans from the `_CONDITION_OPTIONS` mapping in the controller; unmapped conditions → `medical_conditions` text; allergies → `allergies` text) → two `dental.consent` (`data_privacy` + `waiver`, `state='signed'`, `signed_by`/`signature` from canvas dataURL) → best-effort `_create_customer_partner()` to link `res.partner`.
 - **Signature pads**: full-width `<canvas>` scaled to backing size by JS; pointer events → hidden `data-sig-input` field holds `data:image/png;base64,...`. Server `_valid_signature()` strips the dataURL prefix, caps 500 KB, verifies base64.
 - **Validation / security**: honeypot `website` field (any value → silent thanks page), manual regex checks (phone/email/date), dependent-field notes required when a "Yes" flag is ticked, duplicate detection on `last_name`+`first_name`+`birthdate` (rejects with the existing record number), standard CSRF token.
