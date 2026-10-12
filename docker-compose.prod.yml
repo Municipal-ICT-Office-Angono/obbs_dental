@@ -2,7 +2,7 @@ name: obbs_dental_prod
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: obbs_dental_prod_db
     restart: always
     environment:

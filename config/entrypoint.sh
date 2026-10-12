@@ -53,5 +53,46 @@ if [ "$TARGET_CONF" != "/etc/odoo/odoo.conf" ]; then
     export ODOO_RC="$TARGET_CONF"
 fi
 
+# Automatic Database Initialization on Fresh Deployment:
+# If starting the main odoo service against a newly created blank DB,
+# automatically run initial schema installation (-i obbs_dental --without-demo=all)
+FIRST_ARG="${1:-odoo}"
+if [ "$FIRST_ARG" = "odoo" ] && [ -n "${DB_NAME}" ]; then
+    DB_STATUS=$(python3 -c "
+import sys, time, psycopg2
+host = '${HOST:-db}'
+port = int('${PORT:-5432}')
+user = '${USER:-odoo}'
+password = '''${PASSWORD}'''
+dbname = '${DB_NAME}'
+
+for _ in range(30):
+    try:
+        conn = psycopg2.connect(host=host, port=port, user=user, password=password, dbname=dbname, connect_timeout=3)
+        cur = conn.cursor()
+        cur.execute(\"SELECT 1 FROM information_schema.tables WHERE table_name = 'ir_module_module'\")
+        has_table = cur.fetchone() is not None
+        conn.close()
+        print('INITIALIZED' if has_table else 'UNINITIALIZED')
+        sys.exit(0)
+    except psycopg2.OperationalError:
+        time.sleep(2)
+    except Exception as e:
+        print('ERROR')
+        sys.exit(0)
+print('TIMEOUT')
+" 2>/dev/null || echo "SKIP")
+
+    if [ "$DB_STATUS" = "UNINITIALIZED" ]; then
+        echo "============================================================"
+        echo " Fresh database '${DB_NAME}' detected."
+        echo " Auto-initializing core schema and installing obbs_dental..."
+        echo " (This is a one-time process on initial deployment)..."
+        echo "============================================================"
+        /entrypoint.sh odoo -d "${DB_NAME}" -i obbs_dental --without-demo=all --stop-after-init
+        echo "==> Database initialization completed successfully!"
+    fi
+fi
+
 # Hand over execution to official Odoo entrypoint
 exec /entrypoint.sh "$@"
