@@ -69,6 +69,149 @@ Notes:
 
 ---
 
+# Production Deployment (Dokploy)
+
+A production-hardened configuration is provided via **`docker-compose.prod.yml`**, designed specifically for deployment on a **Dokploy** host with strict **network isolation** from other deployed applications on the server.
+
+```
+                      PRODUCTION ARCHITECTURE
+                      
+  [ Client Browsers / Tablets / Public Intake ]
+                           │
+                           ▼  HTTPS (443)
+                 [ Edge Gateway / Proxy ]
+                           │
+                           ▼  Port 80/443
+               [ Dokploy Server Host ]
+                Traefik Reverse Proxy
+                           │  (attached to 'dokploy-network')
+                           ▼
+     ┌────────────────────────────────────────────────────────┐
+     │  OBBS Dental Production Stack                          │
+     │                                                        │
+     │   ┌──────────────────────────┐                         │
+     │   │   obbs_dental_prod_odoo  │ ◄── dokploy-network       │
+     │   │   (Odoo 19 + openpyxl)   │     (Web reverse proxy) │
+     │   └─────────────┬────────────┘                         │
+     │                 │                                      │
+     │                 ▼                                      │
+     │     [ obbs_dental_prod_internal ]                      │
+     │      (bridge, internal: true)                          │
+     │                 │                                      │
+     │                 ▼                                      │
+     │   ┌──────────────────────────┐                         │
+     │   │    obbs_dental_prod_db   │  * No host ports!       │
+     │   │   (Postgres 16-alpine)   │  * Completely isolated  │
+     │   └──────────────────────────┘    from other systems   │
+     └────────────────────────────────────────────────────────┘
+```
+
+### Key Production Enhancements
+
+1. **Strict Network Isolation:**
+   - The database (`obbs_dental_prod_db`) is attached **strictly to a private internal bridge network** (`obbs_dental_prod_internal` with `internal: true`).
+   - PostgreSQL port `5432` is **NEVER exposed to the host**. It cannot be probed or accessed by other systems, containers, or services running on the server.
+   - Only the web container (`obbs_dental_prod_odoo`) connects to `dokploy-network` so Dokploy's reverse proxy can forward web traffic.
+
+2. **Reverse Proxy Hardening:**
+   - `proxy_mode = True` is enforced so Odoo correctly resolves `X-Forwarded-For`, `X-Forwarded-Proto` (HTTPS), and `X-Forwarded-Host`.
+   - `list_db = False` disables `/web/database/manager` and `/web/database/selector` to block unauthorized database enumeration.
+   - Master password (`admin_passwd`) is securely injected from `ODOO_ADMIN_PASSWORD` via the container entrypoint.
+   - `DB_FILTER` locks Odoo strictly to the production database.
+
+3. **Production Dependencies:**
+   - Built with [Dockerfile](Dockerfile) ensuring `openpyxl` is installed for the **DOH Oral Health Form 2** reporting module.
+
+4. **Clean Production Database:**
+   - Initialized with `--without-demo=all` to ensure zero demo records.
+
+---
+
+### Step-by-Step Dokploy Deployment
+
+#### Option A: Deploy via Dokploy Web Dashboard (Recommended)
+
+1. **Create Compose Service:**
+   - In Dokploy, navigate to your Project > **Create Service** > select **Compose**.
+   - Application Name: `obbs-dental`.
+
+2. **Connect Repository:**
+   - Source: **Git** (or GitHub / GitLab).
+   - Repository: your production repository URL.
+   - Branch: `main` (or production release branch).
+   - Compose Path: `docker-compose.prod.yml`.
+
+3. **Configure Environment Variables:**
+   - In the **Environment** tab of the application, copy the template from [`.env.production.example`](.env.production.example) and set your secure passwords:
+     ```env
+     POSTGRES_DB=obbs_dental_prod
+     POSTGRES_USER=obbs_db_admin
+     POSTGRES_PASSWORD=<strong_random_password>
+     ODOO_ADMIN_PASSWORD=<strong_random_master_password>
+     DOKPLOY_NETWORK=dokploy-network
+     LIST_DB=False
+     DB_FILTER=^obbs_dental_prod$
+     ODOO_WORKERS=2
+     ```
+
+4. **Configure Domain & SSL in Dokploy:**
+   - In Dokploy, go to the application's **Domains** tab.
+   - Click **Add Domain** and enter your production domain (e.g. `dental.yourdomain.com`).
+   - Set **Service** to `odoo`.
+   - Set **Port** to `8069`.
+   - Enable **HTTPS / SSL** (Dokploy will automatically provision and renew Let's Encrypt certificates).
+
+5. **Deploy Stack:**
+   - Click **Deploy**. Dokploy will build the image, create the isolated network, and launch the containers.
+
+6. **First-time Database Bootstrap (Initialize Module):**
+   - In Dokploy, open the **Terminal** for `obbs_dental_prod_odoo` (or via host SSH):
+     ```bash
+     docker exec obbs_dental_prod_odoo odoo -d obbs_dental_prod -i obbs_dental --without-demo=all --stop-after-init
+     docker restart obbs_dental_prod_odoo
+     ```
+
+---
+
+#### Option B: Deploy via Command Line / Script
+
+On the Dokploy server host:
+
+```bash
+# 1. Clone repository
+git clone <repository_url> /opt/obbs_dental
+cd /opt/obbs_dental
+
+# 2. Setup production environment file
+cp .env.production.example .env
+nano .env  # configure your secure passwords
+
+# 3. Run automated production initializer
+chmod +x scripts/init_production.sh
+./scripts/init_production.sh
+```
+
+---
+
+### Production Maintenance Commands
+
+```bash
+# View live application logs
+docker compose -f docker-compose.prod.yml logs -f odoo
+
+# Upgrade obbs_dental module after git pull
+docker exec obbs_dental_prod_odoo odoo -d obbs_dental_prod -u obbs_dental --no-http --stop-after-init
+docker restart obbs_dental_prod_odoo
+
+# Clear cached web assets (run before upgrade if JS/CSS changed)
+docker exec obbs_dental_prod_db psql -U obbs_db_admin -d obbs_dental_prod -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';"
+
+# Create a database backup
+docker exec obbs_dental_prod_db pg_dump -U obbs_db_admin -F c obbs_dental_prod > /backup/obbs_dental_prod_$(date +%Y%m%d).dump
+```
+
+---
+
 # Initial Module Structure
 
 ```

@@ -1,0 +1,86 @@
+name: obbs_dental_prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: obbs_dental_prod_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-obbs_dental_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-odoo_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - db_data:/var/lib/postgresql/data/pgdata
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-odoo_admin} -d $${POSTGRES_DB:-obbs_dental_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # STRICT NETWORK ISOLATION:
+    # 1. Attached ONLY to the private internal bridge (internal: true).
+    # 2. No ports published to host (port 5432 remains completely unreachable from outside).
+    networks:
+      - obbs_internal
+
+  odoo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: obbs_dental:1.5.0-prod
+    container_name: obbs_dental_prod_odoo
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      PORT: "5432"
+      USER: ${POSTGRES_USER:-odoo_admin}
+      PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-obbs_dental_prod}
+      DB_FILTER: ${DB_FILTER:-^obbs_dental_prod$$}
+      ODOO_ADMIN_PASSWORD: ${ODOO_ADMIN_PASSWORD}
+      PROXY_MODE: "True"
+      LIST_DB: "${LIST_DB:-False}"
+      ODOO_WORKERS: "${ODOO_WORKERS:-2}"
+    volumes:
+      - ./:/mnt/extra-addons/obbs_dental:ro
+      - odoo_data:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:rw
+    command:
+      - odoo
+      - --without-demo=all
+      - --log-level=info
+    # NETWORK TOPOLOGY:
+    # 1. obbs_internal: Private, isolated backend communication with PostgreSQL.
+    # 2. dokploy-network: External network for Dokploy's reverse proxy to route web requests.
+    networks:
+      - obbs_internal
+      - dokploy-network
+    # Note: Domain routing is managed directly in the Dokploy dashboard (Domains tab).
+    # Point your domain to service 'odoo' on port 8069 in Dokploy.
+    #
+    # Optional direct host port mapping (uncomment if bypassing reverse proxy):
+    # ports:
+    #   - "${ODOO_HOST_PORT:-8069}:8069"
+
+volumes:
+  db_data:
+    name: obbs_dental_prod_db_data
+  odoo_data:
+    name: obbs_dental_prod_odoo_data
+
+networks:
+  # Internal network: 'internal: true' blocks all incoming and outgoing external traffic,
+  # isolating the database container from any other deployed stacks on the host.
+  obbs_internal:
+    name: obbs_dental_prod_internal
+    driver: bridge
+    internal: true
+
+  # External network managed by Dokploy reverse proxy
+  dokploy-network:
+    name: ${DOKPLOY_NETWORK:-dokploy-network}
+    external: true
