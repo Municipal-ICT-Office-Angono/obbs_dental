@@ -12,26 +12,29 @@ Y4 = 264
 VIEWBOX = '0 0 %s %s' % (VB_W, VB_H)
 MIDLINE_X = int(HALF)
 
-_PERM_LEFT_X = (HALF - PERM_COUNT * PX) / 2
-_PERM_RIGHT_X = HALF + (HALF - PERM_COUNT * PX) / 2
-_PED_LEFT_X = (HALF - PED_COUNT * PX) / 2
-_PED_RIGHT_X = HALF + (HALF - PED_COUNT * PX) / 2
+_MID_GAP = PX / 2
+
+_PERM_LEFT_X = HALF - _MID_GAP
+_PERM_RIGHT_X = HALF + _MID_GAP
+_PED_LEFT_X = HALF - _MID_GAP
+_PED_RIGHT_X = HALF + _MID_GAP
 
 TOOTH_POSITIONS = {}
+# Left blocks are mirrored: the innermost tooth is the last entry of the list.
 for i, n in enumerate([18, 17, 16, 15, 14, 13, 12, 11]):
-    TOOTH_POSITIONS[n] = (int(_PERM_LEFT_X + i * PX), Y2)
+    TOOTH_POSITIONS[n] = (int(_PERM_LEFT_X - (PERM_COUNT - 1 - i) * PX), Y2)
 for i, n in enumerate([21, 22, 23, 24, 25, 26, 27, 28]):
     TOOTH_POSITIONS[n] = (int(_PERM_RIGHT_X + i * PX), Y2)
 for i, n in enumerate([48, 47, 46, 45, 44, 43, 42, 41]):
-    TOOTH_POSITIONS[n] = (int(_PERM_LEFT_X + i * PX), Y3)
+    TOOTH_POSITIONS[n] = (int(_PERM_LEFT_X - (PERM_COUNT - 1 - i) * PX), Y3)
 for i, n in enumerate([31, 32, 33, 34, 35, 36, 37, 38]):
     TOOTH_POSITIONS[n] = (int(_PERM_RIGHT_X + i * PX), Y3)
 for i, n in enumerate([55, 54, 53, 52, 51]):
-    TOOTH_POSITIONS[n] = (int(_PED_LEFT_X + i * PX), Y1)
+    TOOTH_POSITIONS[n] = (int(_PED_LEFT_X - (PED_COUNT - 1 - i) * PX), Y1)
 for i, n in enumerate([61, 62, 63, 64, 65]):
     TOOTH_POSITIONS[n] = (int(_PED_RIGHT_X + i * PX), Y1)
 for i, n in enumerate([85, 84, 83, 82, 81]):
-    TOOTH_POSITIONS[n] = (int(_PED_LEFT_X + i * PX), Y4)
+    TOOTH_POSITIONS[n] = (int(_PED_LEFT_X - (PED_COUNT - 1 - i) * PX), Y4)
 for i, n in enumerate([71, 72, 73, 74, 75]):
     TOOTH_POSITIONS[n] = (int(_PED_RIGHT_X + i * PX), Y4)
 

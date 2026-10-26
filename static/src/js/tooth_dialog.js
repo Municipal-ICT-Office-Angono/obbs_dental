@@ -1,6 +1,6 @@
 /** @odoo-module **/
 import { Component } from "@odoo/owl";
-import { SURFACE_LABELS } from "./tooth_layout";
+import { getSurfaceInfo } from "./tooth_layout";
 
 export class ToothDialog extends Component {
     static template = "obbs_dental.ToothDialog";
@@ -20,8 +20,24 @@ export class ToothDialog extends Component {
         onNotesChange: { type: Function },
     };
 
+    get surfaceInfo() {
+        return getSurfaceInfo(this.props.toothNumber, this.props.surface) || {
+            num: '',
+            name: this.props.surface || '',
+            label: this.props.surface || '',
+        };
+    }
+
     get surfaceLabel() {
-        return SURFACE_LABELS[this.props.surface] || this.props.surface;
+        return this.surfaceInfo.label;
+    }
+
+    get surfaceName() {
+        return this.surfaceInfo.name;
+    }
+
+    get surfaceNumber() {
+        return this.surfaceInfo.num;
     }
 
     get selectedColor() {

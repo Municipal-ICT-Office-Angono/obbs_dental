@@ -5,13 +5,13 @@
     <div class="o_dental_overlay" t-on-click="props.onClose">
         <div class="o_dental_dialog" t-on-click="(e) => e.stopPropagation()">
             <div class="o_dental_dialog_title">
-                <span>Tooth #<t t-esc="props.toothNumber"/> — <t t-esc="surfaceLabel"/></span>
+                <span>Tooth #<t t-esc="props.toothNumber"/> — <t t-esc="surfaceName"/> (<t t-esc="surfaceNumber"/>)</span>
                 <button type="button" class="o_dental_dialog_close" t-on-click="props.onClose">×</button>
             </div>
             <div class="o_dental_dialog_body">
                 <div class="o_dental_field">
                     <label>Surface</label>
-                    <div class="o_dental_surface_badge"><t t-esc="props.surface"/> — <t t-esc="surfaceLabel"/></div>
+                    <div class="o_dental_surface_badge"><t t-esc="surfaceLabel"/></div>
                 </div>
                 <div class="o_dental_field">
                     <label>Condition</label>

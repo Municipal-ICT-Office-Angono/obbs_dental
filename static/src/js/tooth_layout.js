@@ -2,13 +2,47 @@
 
 export const SURFACES = ['T', 'B', 'L', 'R', 'C'];
 
-export const SURFACE_LABELS = {
-    T: 'Top (Occlusal/Incisal)',
-    B: 'Bottom (Cervical)',
-    L: 'Left (Mesial/Distal)',
-    R: 'Right (Distal/Mesial)',
-    C: 'Center (Central)',
+// Surface numbering used by the DOH oral health forms:
+//   1 Buccal | 2 Lingual | 3 Distal | 4 Mesial | 5 Occlusal | 6 Incisal | 7 Labial
+// The sector labels depend on the arch (upper/lower) and on whether the tooth is
+// an anterior (incisor or canine) or a posterior (premolar or molar) tooth.
+const SURFACE_INFO = {
+    upper: {
+        posterior: { T: [1, 'Buccal'], B: [2, 'Lingual'], L: [3, 'Distal'], R: [4, 'Mesial'], C: [5, 'Occlusal'] },
+        anterior: { T: [7, 'Labial'], B: [2, 'Lingual'], L: [3, 'Distal'], R: [4, 'Mesial'], C: [6, 'Incisal'] },
+    },
+    lower: {
+        posterior: { T: [2, 'Lingual'], B: [1, 'Buccal'], L: [3, 'Distal'], R: [4, 'Mesial'], C: [5, 'Occlusal'] },
+        anterior: { T: [2, 'Lingual'], B: [7, 'Labial'], L: [3, 'Distal'], R: [4, 'Mesial'], C: [6, 'Incisal'] },
+    },
 };
+
+/**
+ * Return the numbered anatomical label of a surface sector for a given tooth.
+ * e.g. getSurfaceInfo(12, 'C') -> { num: 6, name: 'Incisal', label: '6 — Incisal' }
+ */
+export function getSurfaceInfo(toothNumber, slot) {
+    const n = Number(toothNumber);
+    if (!n || !slot) {
+        return null;
+    }
+    const quadrant = Math.floor(n / 10);
+    const isUpper = quadrant === 1 || quadrant === 2 || quadrant === 5 || quadrant === 6;
+    // Primary canines (53/63/73/83) are anterior just like their permanent peers.
+    const isAnterior = (n % 10) <= 3;
+    const entry = SURFACE_INFO[isUpper ? 'upper' : 'lower'][isAnterior ? 'anterior' : 'posterior'][slot];
+    if (!entry) {
+        return null;
+    }
+    let [num, name] = entry;
+    // The right half of the chart is mirrored: mesial is on the left, distal on the right.
+    const mirrored = quadrant === 2 || quadrant === 3 || quadrant === 6 || quadrant === 7;
+    if (mirrored && (slot === 'L' || slot === 'R')) {
+        num = slot === 'L' ? 4 : 3;
+        name = slot === 'L' ? 'Mesial' : 'Distal';
+    }
+    return { num, name, label: `${num} — ${name}` };
+}
 
 const PX = 56;
 const VB_W = 1020;
@@ -21,11 +55,17 @@ const Y2 = 108;
 const Y3 = 186;
 const Y4 = 264;
 
-const permLeftX = (HALF - PERM_COUNT * PX) / 2;
-const permRightX = HALF + (HALF - PERM_COUNT * PX) / 2;
+// The arch is laid out symmetrically about the midline: the innermost tooth of
+// every quadrant sits half a tooth-spacing away from MIDLINE_X and the rest fan
+// outward. This keeps 18/28 (and 48/38) equidistant from the centre so nothing
+// is pushed off the printed page.
+const MID_GAP = PX / 2;
 
-const pedLeftX = (HALF - PED_COUNT * PX) / 2;
-const pedRightX = HALF + (HALF - PED_COUNT * PX) / 2;
+const permLeftX = HALF - MID_GAP;
+const permRightX = HALF + MID_GAP;
+
+const pedLeftX = HALF - MID_GAP;
+const pedRightX = HALF + MID_GAP;
 
 export const VIEWBOX = `0 0 ${VB_W} ${VB_H}`;
 export const MIDLINE_X = HALF;
@@ -37,16 +77,17 @@ export const TOOTH_POSITIONS = (() => {
         pos[n] = { x, y };
     }
 
-    [18, 17, 16, 15, 14, 13, 12, 11].forEach((n, i) => set(n, permLeftX + i * PX, Y2));
+    // Left blocks are mirrored: the innermost tooth is the last entry of the array.
+    [18, 17, 16, 15, 14, 13, 12, 11].forEach((n, i) => set(n, permLeftX - (PERM_COUNT - 1 - i) * PX, Y2));
     [21, 22, 23, 24, 25, 26, 27, 28].forEach((n, i) => set(n, permRightX + i * PX, Y2));
 
-    [48, 47, 46, 45, 44, 43, 42, 41].forEach((n, i) => set(n, permLeftX + i * PX, Y3));
+    [48, 47, 46, 45, 44, 43, 42, 41].forEach((n, i) => set(n, permLeftX - (PERM_COUNT - 1 - i) * PX, Y3));
     [31, 32, 33, 34, 35, 36, 37, 38].forEach((n, i) => set(n, permRightX + i * PX, Y3));
 
-    [55, 54, 53, 52, 51].forEach((n, i) => set(n, pedLeftX + i * PX, Y1));
+    [55, 54, 53, 52, 51].forEach((n, i) => set(n, pedLeftX - (PED_COUNT - 1 - i) * PX, Y1));
     [61, 62, 63, 64, 65].forEach((n, i) => set(n, pedRightX + i * PX, Y1));
 
-    [85, 84, 83, 82, 81].forEach((n, i) => set(n, pedLeftX + i * PX, Y4));
+    [85, 84, 83, 82, 81].forEach((n, i) => set(n, pedLeftX - (PED_COUNT - 1 - i) * PX, Y4));
     [71, 72, 73, 74, 75].forEach((n, i) => set(n, pedRightX + i * PX, Y4));
 
     return pos;

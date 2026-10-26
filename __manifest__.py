@@ -13,7 +13,7 @@ Electronic Dental Record (EDR).
     'website': 'https://obbs.com',
 
     'category': 'Medical',
-    'version': '1.5.0',
+    'version': '1.5.1',
 
     'depends': ['base', 'contacts', 'mail', 'portal', 'auth_signup', 'website'],
 
