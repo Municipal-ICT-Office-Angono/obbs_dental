@@ -36,7 +36,20 @@ class DentalHistory(models.Model):
         ('Att', 'Attachment'),
         ('Po', 'Pontic'),
         ('Rm', 'Removable Denture'),
+        ('Gi', 'Gingivitis'),
+        ('PD', 'Periodontal Disease'),
+        ('OD', 'Oral Debris'),
+        ('Ca', 'Calculus'),
+        ('DFA', 'Dento-Facial Anomaly'),
     ], string='Condition', required=True)
+
+    surface = fields.Selection([
+        ('T', 'Top'),
+        ('B', 'Bottom'),
+        ('L', 'Left'),
+        ('R', 'Right'),
+        ('C', 'Center'),
+    ], string='Surface')
 
     arch = fields.Selection([
         ('upper', 'Upper'),
@@ -115,3 +128,35 @@ class DentalHistory(models.Model):
             'date': fields.Date.today(),
         })
         return {'id': record.id, 'success': True}
+
+    @api.model
+    def _log_surface(self, tooth, surface, condition, vals):
+        """Append the chart change to the dated treatment log.
+
+        ``dental.tooth.surface`` only holds the *current* state of each sector,
+        so nothing would ever show up in the Dental History tab or on the
+        patient portal without this. Re-saving an identical state is ignored.
+        """
+        if not tooth or not condition or not tooth.patient_id:
+            return self.browse()
+        patient = tooth.patient_id
+        treatment = vals.get('treatment') or False
+        notes = vals.get('notes') or False
+        last = self.search([
+            ('patient_id', '=', patient.id),
+            ('tooth_number', '=', tooth.tooth_number),
+            ('surface', '=', surface or False),
+        ], limit=1, order='id desc')
+        if (last and last.condition == condition.code
+                and (last.treatment or False) == treatment
+                and (last.notes or False) == notes):
+            return last
+        return self.create({
+            'patient_id': patient.id,
+            'tooth_number': tooth.tooth_number,
+            'surface': surface or False,
+            'condition': condition.code,
+            'treatment': treatment,
+            'notes': notes,
+            'date': fields.Date.today(),
+        })

@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local credentials / secrets - never commit
+creds.txt
+creds*.txt

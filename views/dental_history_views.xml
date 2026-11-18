@@ -7,6 +7,7 @@
             <list string="Dental History" multi_edit="1">
                 <field name="patient_id"/>
                 <field name="tooth_number"/>
+                <field name="surface"/>
                 <field name="condition"/>
                 <field name="arch"/>
                 <field name="quadrant"/>
@@ -31,6 +32,7 @@
                         </group>
                         <group string="Condition">
                             <field name="condition"/>
+                            <field name="surface"/>
                             <field name="arch" readonly="1"/>
                             <field name="quadrant" readonly="1"/>
                         </group>
