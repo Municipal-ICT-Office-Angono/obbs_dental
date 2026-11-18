@@ -100,7 +100,6 @@ class DentalPatient(models.Model):
     signature_name = fields.Char(string='Signature Name')
 
     medical_history_ids = fields.One2many('dental.medical.history', 'patient_id', string='Medical History')
-    dental_history_ids = fields.One2many('dental.history', 'patient_id', string='Dental History')
     tooth_ids = fields.One2many('dental.tooth', 'patient_id', string='Teeth')
     tooth_surface_ids = fields.One2many(
         'dental.tooth.surface',

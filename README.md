@@ -87,7 +87,6 @@ obbs_dental/
 │   ├── dental_tooth_surface.py
 │   ├── dental_condition.py
 │   ├── dental_consent.py
-│   ├── dental_history.py
 │   ├── dental_service.py
 │   ├── dental_visit.py
 │   └── dental_clinical_finding.py
@@ -485,9 +484,9 @@ The module is designed to integrate seamlessly with existing Odoo applications.
 ### Phase 4 — Dental History / Visits View ☑️ *(Done)*
 - [x] `/my/dental_history` route + page
 - [x] Visits accordion with services + DOH indicator badges
-- [x] Dental Treatment Records table with condition color badges (from `dental.condition`)
+- [x] Chart Records table on `/my/dental_history`, read from `dental.tooth.surface` (condition badge from `dental.condition`)
 - [x] "My Dental History" card on the portal home
-- [x] Demo data now generates `dental.history` records (1-4 per ~30% of patients)
+- [x] Legacy `dental.history` model retired (v1.6.0) — the odontogram is the single source
 
 ### Phase 5 — Dental Chart Read-Only View ☑️ *(Done)*
 - [x] `/my/dental_chart` route + page

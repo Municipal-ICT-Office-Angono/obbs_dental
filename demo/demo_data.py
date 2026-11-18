@@ -186,7 +186,6 @@ class DentalPatient(models.Model):
         self._create_demo_medical_histories(patients)
         self._create_demo_dental_conditions(patients, cond_map)
         self._create_demo_visits(patients, svc_map)
-        self._create_demo_dental_history(patients, cond_map)
         self._create_demo_consents(patients)
 
         return {
@@ -522,39 +521,6 @@ class DentalPatient(models.Model):
                     'ofc_oral_exam': ofc_exam,
                     'ofc_rehabilitation': ofc_rehab,
                     'notes': rng.choice(TREATMENT_NOTES),
-                })
-
-    def _create_demo_dental_history(self, patients, cond_map):
-        history_env = self.env['dental.history']
-        rng = random.Random(42)
-
-        all_tooth_numbers = [
-            '11', '12', '13', '14', '15', '16', '17', '18',
-            '21', '22', '23', '24', '25', '26', '27', '28',
-            '31', '32', '33', '34', '35', '36', '37', '38',
-            '41', '42', '43', '44', '45', '46', '47', '48',
-        ]
-        treat_codes = ['PR', 'D', 'Am', 'Co', 'JC', 'S', 'X', 'XO', 'Rf', 'Im', 'Imp', 'Po', 'Rm', 'ABF', 'ABR']
-
-        for patient in patients:
-            if rng.random() > 0.7:
-                continue
-            visits = self.env['dental.visit'].search([('patient_id', '=', patient.id)])
-            visit_dates = [v.visit_date for v in visits]
-            num_entries = rng.randint(1, 4)
-            used_teeth = set()
-            for _ in range(num_entries):
-                tooth = rng.choice([t for t in all_tooth_numbers if t not in used_teeth])
-                used_teeth.add(tooth)
-                code = rng.choice(treat_codes)
-                entry_date = rng.choice(visit_dates) if visit_dates else date(2026, rng.randint(1, 8), rng.randint(1, 28))
-                history_env.create({
-                    'patient_id': patient.id,
-                    'tooth_number': tooth,
-                    'date': entry_date,
-                    'condition': code,
-                    'treatment': rng.choice(TREATMENT_NOTES) if code != 'PR' else '',
-                    'notes': rng.choice(['', 'Routine treatment', 'Patient informed', 'Follow-up scheduled']),
                 })
 
     def _create_demo_consents(self, patients):

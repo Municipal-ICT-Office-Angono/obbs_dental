@@ -214,7 +214,7 @@
             </t>
 
             <t t-if="entries">
-                <h5 class="mt-2 mb-3"><i class="fa fa-list me-1"/> Dental Treatment Records
+                <h5 class="mt-2 mb-3"><i class="fa fa-list me-1"/> Chart Records
                     <span class="badge text-bg-light border text-muted" t-out="len(entries)"/>
                 </h5>
                 <div class="table-responsive">
@@ -223,24 +223,24 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Tooth</th>
+                                <th>Surface</th>
                                 <th>Condition</th>
                                 <th>Treatment</th>
                                 <th>Notes</th>
-                                <th>Dentist</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-foreach="entries" t-as="entry">
                                 <tr>
                                     <td t-out="entry.date"/>
-                                    <td><strong t-out="entry.tooth_number"/></td>
+                                    <td><strong t-out="entry.tooth_id.tooth_number"/></td>
+                                    <td t-esc="entry.surface or ''"/>
                                     <td>
-                                        <span t-att-style="'background-color: ' + (cond_colors.get(entry.condition) or '#6c757d') + '; color: #fff'"
-                                              class="badge" t-out="cond_labels.get(entry.condition) or entry.condition"/>
+                                        <span t-att-style="'background-color: ' + (entry.condition.color or '#6c757d') + '; color: #fff'"
+                                              class="badge" t-out="entry.condition.name or ''"/>
                                     </td>
                                     <td t-esc="entry.treatment or ''"/>
                                     <td t-esc="entry.notes or ''"/>
-                                    <td t-esc="entry.dentist_id.display_name or ''"/>
                                 </tr>
                             </t>
                         </tbody>

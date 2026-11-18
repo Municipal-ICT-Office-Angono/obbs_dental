@@ -37,7 +37,7 @@ services:
     # not settable via CLI). Login: admin / admin
     command:
       - odoo
-      - --db-filter=obbs_dental_demo
+      - --db-filter=^obbs_dental_(demo|prod_jul)$
       - --log-level=info
 
 volumes:

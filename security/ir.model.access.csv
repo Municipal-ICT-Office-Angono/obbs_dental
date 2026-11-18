@@ -3,8 +3,6 @@ access_dental_patient_manager,dental.patient manager,model_dental_patient,group_
 access_dental_patient_assistant,dental.patient assistant,model_dental_patient,group_dental_assistant,1,1,1,0
 access_dental_medical_history_manager,dental.medical.history manager,model_dental_medical_history,group_dental_manager,1,1,1,1
 access_dental_medical_history_assistant,dental.medical.history assistant,model_dental_medical_history,group_dental_assistant,1,1,1,0
-access_dental_history_manager,dental.history manager,model_dental_history,group_dental_manager,1,1,1,1
-access_dental_history_assistant,dental.history assistant,model_dental_history,group_dental_assistant,1,1,1,0
 access_dental_consent_manager,dental.consent manager,model_dental_consent,group_dental_manager,1,1,1,1
 access_dental_consent_assistant,dental.consent assistant,model_dental_consent,group_dental_assistant,1,1,1,0
 access_dental_tooth_manager,dental.tooth manager,model_dental_tooth,group_dental_manager,1,1,1,1
