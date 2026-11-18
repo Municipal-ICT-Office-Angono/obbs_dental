@@ -6,4 +6,8 @@ __pycache__/
 .env
 .env.*
 !.env.production.example
-!.env.example
+!.env.example
+
+# Local credentials / secrets - never commit
+creds.txt
+creds*.txt

@@ -79,7 +79,32 @@ class DentalClinicalFinding(models.Model):
             name = rec.patient_id.display_name or ''
             rec.display_name = f'{name} - {rec.date}' if rec.date else name
 
+    def _ensure_visit(self):
+        """Make sure the confirmed consultation exists as a dental.visit.
+
+        Attendance, the dashboard KPIs and the DOH Form 2 are all derived from
+        dental.visit.visit_date, so a finding recorded on its own would never be
+        counted (and its services could not be captured). Idempotent: a second
+        confirmation for the same patient/day will not duplicate the visit.
+        """
+        visit_model = self.env['dental.visit']
+        for rec in self:
+            if not rec.patient_id or not rec.date:
+                continue
+            exists = visit_model.search_count([
+                ('patient_id', '=', rec.patient_id.id),
+                ('visit_date', '=', rec.date),
+            ])
+            if not exists:
+                visit_model.create({
+                    'patient_id': rec.patient_id.id,
+                    'visit_date': rec.date,
+                    'dentist_id': rec.dentist_id.id or False,
+                    'notes': 'Auto-created from clinical finding',
+                })
+
     def action_confirm(self):
+        self._ensure_visit()
         patients = self.mapped('patient_id').filtered(
             lambda p: p.source == 'web_intake' and p.intake_status == 'pending_review'
         )
@@ -91,8 +116,8 @@ class DentalClinicalFinding(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': 'Assessment Completed',
-                'message': 'Clinical finding confirmed. The patient intake was '
-                           'marked as processed when applicable.',
+                'message': 'Clinical finding confirmed and the visit recorded. '
+                           'The patient intake was marked as processed when applicable.',
                 'type': 'success',
                 'sticky': False,
             },

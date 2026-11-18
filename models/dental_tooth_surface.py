@@ -50,9 +50,15 @@ class DentalToothSurface(models.Model):
 
         if condition.apply_to_whole_tooth:
             record = self._apply_whole_tooth(tooth, condition, vals)
+            logged_surface = False
         else:
             self._check_whole_tooth_conflict(tooth, condition)
             record = self._apply_surface(tooth, vals.get('surface'), condition, vals)
+            logged_surface = vals.get('surface')
+
+        self.env['dental.history'].sudo()._log_surface(
+            tooth, logged_surface, condition, vals
+        )
 
         tooth.patient_id.invalidate_recordset()
         return {'id': record.id, 'success': True}
