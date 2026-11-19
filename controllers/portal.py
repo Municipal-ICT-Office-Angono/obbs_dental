@@ -72,18 +72,13 @@ class DentalPatientPortal(CustomerPortal):
 
     @http.route(['/my/dental_history'], type='http', auth='user', website=True)
     def portal_dental_history(self, **kw):
-        """Dental history entries and visits for the current patient."""
+        """Chart records (odontogram) and visits for the current patient."""
         patient = self._get_my_patient()
-        conditions = request.env['dental.condition'].sudo().search([])
-        cond_labels = {c.code: c.name for c in conditions}
-        cond_colors = {c.code: c.color for c in conditions}
         values = self._prepare_portal_layout_values()
         values.update({
             'page_name': 'dental_history',
-            'entries': sorted(patient.dental_history_ids.sudo(), key=lambda r: r.date, reverse=True) if patient else [],
+            'entries': sorted(patient.tooth_surface_ids.sudo(), key=lambda r: (r.date or r.create_date.date(), r.id), reverse=True) if patient else [],
             'visits': sorted(request.env['dental.visit'].sudo().search([('patient_id', '=', patient.id)]), key=lambda r: r.visit_date, reverse=True) if patient else [],
-            'cond_labels': cond_labels,
-            'cond_colors': cond_colors,
         })
         return request.render('obbs_dental.portal_dental_history', values)
 

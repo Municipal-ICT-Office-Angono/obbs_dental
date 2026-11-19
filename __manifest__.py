@@ -13,7 +13,7 @@ Electronic Dental Record (EDR).
     'website': 'https://obbs.com',
 
     'category': 'Medical',
-    'version': '1.5.3',
+    'version': '1.6.0',
 
     'depends': ['base', 'contacts', 'mail', 'portal', 'auth_signup', 'website'],
 
@@ -25,7 +25,6 @@ Electronic Dental Record (EDR).
         'data/dental_service_data.xml',
         'views/dental_patient_views.xml',
         'views/dental_medical_history_views.xml',
-        'views/dental_history_views.xml',
         'views/dental_consent_views.xml',
         'views/dental_tooth_views.xml',
         'views/dental_condition_views.xml',
